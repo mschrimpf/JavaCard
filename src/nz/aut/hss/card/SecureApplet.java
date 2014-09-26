@@ -22,11 +22,13 @@ import javacard.framework.service.Dispatcher;
 import javacard.framework.service.RMIService;
 import javacard.framework.service.SecurityService;
 
+/**
+ * @see <a href="http://stackoverflow.com/questions/21284830/working-with-java-card-wallet">Stackoverflow Wallet</a>
+ */
 public class SecureApplet extends Applet {
-	// maximum number of incorrect tries before the
-	// PIN is blocked
+	/** maximum number of incorrect tries before the PIN is blocked */
 	final static byte PIN_TRY_LIMIT = (byte) 0x03;
-	// maximum size PIN
+	/** maximum size PIN */
 	final static byte MAX_PIN_SIZE = (byte) 0x08;
 
 	private OwnerPIN pin;
@@ -44,8 +46,7 @@ public class SecureApplet extends Applet {
 		byte cLen = bArray[bOffset]; // info length
 		bOffset = (short) (bOffset + cLen + 1);
 
-		// The installation parameters contain the PIN
-		// initialization value
+		// The installation parameters contain the PIN initialization value
 		pin.update(bArray, (short) (bOffset + 1), aidLength);
 
 		// once all memory successfully allocated for applet then
