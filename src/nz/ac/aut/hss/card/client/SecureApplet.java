@@ -12,7 +12,7 @@
  ant run-script
  @author Andrew Ensor
  */
-package nz.aut.hss.card;
+package nz.ac.aut.hss.card.client;
 
 import javacard.framework.APDU;
 import javacard.framework.Applet;

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?> 
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
    Ant build file for the Java Card applet called "SecureRMIDemo"
    that builds, converts, verifies, and deploys the applet
@@ -14,167 +14,187 @@
 
 <!-- Note: FOLLOWING SPECIFIES THE PROJECT NAME FOR THE JAVA CARD APPLICATION -->
 <project basedir="." default="help" name="SecureApplet">
-   
-   <!-- Note: CHANGE THE FOLLOWING PROPERTIES FOR ANOTHER APPLET -->
-   <property name="applet.package" value="nz/aut/hss/card"/>
-   <property name="applet.name" value="SecureApplet"/>
-   <property name="package.aid" value="0x10:0x20:0x30:0x40:0x50:0x04"/>
-   <property name="applet.aid" value="0x10:0x20:0x30:0x40:0x50:0x05"/>
-   <property name="script.name" value="SecureApplet.scr"/>
-   <property name="host.name" value="SecureAppletHost"/>
-   
-   <property name="applet.sourcedir" value="."/>
-   <property name="applet.scriptdir" value="."/>
-   <property name="applet.builddir" value="classes"/>
-   <property name="host.sourcedir" value="."/>
-   <property name="host.builddir" value="."/>
-   <property name="applet.deploydir" value="EEPROM"/>
-   <property name="deploy.name" value="EEFile"/>
-   <property name="exportmap" value="exportmap"/>
-   <property name="jdk.home" value="C:/Program Files/Java/JavaCard"/>
-   <property name="javacardkit.home" value="C:/Program Files/Java/JavaCard"/>
-   <property name="javacardkit.exports" value="${javacardkit.home}/api_export_files"/>
-   <property name="javacardkit.bin" value="${javacardkit.home}/bin"/>
-   <property name="javacardkit.lib" value="${javacardkit.home}/lib"/>
-   <property name="javacardkit.ant" value="${javacardkit.home}/ant-tasks/lib"/>
-   
-   <!-- Note: PLEASE DON'T MODIFY ANY OF THE REMAINING BUILD FILE -->
-   <!-- definitions for tasks for Java Card tools -->
-   <taskdef name="apdutool" classname="com.sun.javacard.ant.tasks.APDUToolTask"
-      classpath="${javacardkit.ant}/jctasks.jar"/>
-   <taskdef name="capgen" classname="com.sun.javacard.ant.tasks.CapgenTask"
-      classpath="${javacardkit.ant}/jctasks.jar"/>
-   <taskdef name="maskgen" classname="com.sun.javacard.ant.tasks.MaskgenTask"
-      classpath="${javacardkit.ant}/jctasks.jar"/>
-   <taskdef name="deploycap" classname="com.sun.javacard.ant.tasks.DeployCapTask"
-      classpath="${javacardkit.ant}/jctasks.jar"/>
-   <taskdef name="exp2text" classname="com.sun.javacard.ant.tasks.Exp2TextTask"
-      classpath="${javacardkit.ant}/jctasks.jar"/>
-   <taskdef name="convert" classname="com.sun.javacard.ant.tasks.ConverterTask"
-      classpath="${javacardkit.ant}/jctasks.jar"/>
-   <taskdef name="verifyexport" classname="com.sun.javacard.ant.tasks.VerifyExpTask"
-      classpath="${javacardkit.ant}/jctasks.jar"/>
-   <taskdef name="verifycap" classname="com.sun.javacard.ant.tasks.VerifyCapTask"
-      classpath="${javacardkit.ant}/jctasks.jar"/>
-   <taskdef name="verifyrevision" classname="com.sun.javacard.ant.tasks.VerifyRevTask"
-      classpath="${javacardkit.ant}/jctasks.jar"/>
-   <taskdef name="scriptgen" classname="com.sun.javacard.ant.tasks.ScriptgenTask"
-      classpath="${javacardkit.ant}/jctasks.jar"/>
-   <typedef name="appletnameaid" classname="com.sun.javacard.ant.types.AppletNameAID"
-      classpath="${javacardkit.ant}/jctasks.jar"/>
-   <typedef name="jcainputfile" classname="com.sun.javacard.ant.types.JCAInputFile"
-      classpath="${javacardkit.ant}/jctasks.jar"/>
-   <typedef name="exportfiles" classname="org.apache.tools.ant.types.FileSet"
-      classpath="${javacardkit.ant}/jctasks.jar"/>
-   
-   <!-- set the classpath at minimum to the Java Card API but also for -->
-   <!-- all other APIs needed in the project-->
-   <path id="classpath">
-      <pathelement path="${javacardkit.lib}/api.jar"/>
-      <pathelement path="${javacardkit.lib}/converter.jar"/>
-      <pathelement path="${javacardkit.lib}/offcardverifier.jar"/>
-      <pathelement path="${javacardkit.lib}/jcrmiclientframework.jar"/>
-      <pathelement path="${javacardkit.lib}/scriptgen.jar"/>
-      <pathelement path="${javacardkit.lib}/apdutool.jar"/>
-      <pathelement path="${javacardkit.lib}/apduio.jar"/>
-      <pathelement path="${basedir}"/>
-   </path>
-   
-   <!-- set the export path to the Java Card export files -->
-   <path id="exportpath">
-      <pathelement path="${javacardkit.exports}"/>
-      <pathelement path="${applet.builddir}"/>
-   </path>
-   
-   <target name="build-applet">
-      <mkdir dir="${applet.builddir}"/>
-      <javac debug="yes" optimize="no" source="1.5" target="1.5"
-         srcdir="${applet.sourcedir}/src/${applet.package}"
-         destdir="${applet.builddir}">
-         <classpath refid="classpath"/>
-      </javac>
-   </target>
+	<property name="verbose" value="true"/>
 
-   <target name="convert-applet" depends="build-applet">
-      <convert CAP="true" packagename="${applet.package}"
-         packageaid="${package.aid}" majorminorversion="1.0"
-         classdir="${applet.builddir}" outputdirectory="${applet.builddir}">
-         <AppletNameAID appletname="${applet.package}/${applet.name}"
-            aid="${applet.aid}"/>
-         <exportpath refid="exportpath"/>
-         <classpath refid="classpath"/>
-      </convert>
-   </target>
+	<property name="base.package" value="nz/ac/aut/hss/card"/>
+	<property name="base.sourcedir" value="src"/>
 
-   <target name="verify-applet" depends="convert-applet">
-      <verifycap
-         CapFile="${applet.builddir}/${applet.package}/javacard/${applet.package}.cap">
-         <exportfiles dir="${javacardkit.exports}">
-           <include name="**/io.exp"/>
-           <include name="**/lang.exp"/>
-           <include name="**/rmi.exp"/>
-           <include name="**/framework.exp"/>
-           <include name="**/service.exp"/>
-           <include name="**/security.exp"/>
-           <include name="**/crypto.exp"/>
-         </exportfiles>
-         <classpath refid="classpath"/>
-      </verifycap>
-   </target>
+	<property name="applet.name" value="SecureApplet"/>
+	<property name="applet.sourcedir" value="${base.sourcedir}"/>
+	<property name="applet.package" value="${base.package}/client"/>
+	<property name="applet.scriptdir" value="."/>
+	<property name="applet.builddir" value="client-classes"/>
+	<property name="package.aid" value="0x10:0x20:0x30:0x40:0x50:0x04"/>
+	<property name="applet.aid" value="0x10:0x20:0x30:0x40:0x50:0x05"/>
+	<property name="script.name" value="SecureApplet.scr"/>
 
-   <target name="deploy-applet" depends="convert-applet">
-      <mkdir dir="${applet.deploydir}"/>
-      <deploycap outEEFile="${applet.deploydir}/${deploy.name}"
-         CrefExe="${javacardkit.home}/bin/cref.exe"
-         CapFile="${applet.builddir}/${applet.package}/javacard/${applet.package}.cap">
-         <classpath refid="classpath"/>
-      </deploycap>
-   </target>
+	<property name="host.name" value="SecureAppletHost"/>
+	<property name="host.sourcedir" value="${base.sourcedir}"/>
+	<property name="host.package" value="${base.package}/host"/>
+	<property name="host.builddir" value="host-classes"/>
 
-   <target name="run-script">
-      <apdutool scriptFile="${applet.scriptdir}/${script.name}"
-         inEEFile="${applet.deploydir}/${deploy.name}"
-         outEEFile="${applet.deploydir}/${deploy.name}"
-         CheckDownloadFailure="false"
-         CrefExe="${javacardkit.home}/bin/cref.exe">
-         <classpath refid="classpath"/>
-      </apdutool>
-   </target>
-   
-   <target name="start-cad">
-      <exec dir="${basedir}" executable="${javacardkit.bin}/cref.exe">
-         <arg line="-i ${applet.deploydir}/${deploy.name}"/>
-         <arg line="-o ${applet.deploydir}/${deploy.name}"/>
-      </exec>
-   </target>
-   
-   <target name="build-host">
-      <javac debug="yes" optimize="no" includeantruntime="false"
-         srcdir="${host.sourcedir}"
-         destdir="${host.builddir}">
-         <classpath refid="classpath"/>
-      </javac>
-   </target>
-   
-   <target name="run-host">
-      <java dir="${host.sourcedir}" className="${host.name}">
-         <classpath refid="classpath"/>
-      </java>
-   </target>
+	<property name="applet.deploydir" value="EEPROM"/>
+	<property name="deploy.name" value="EEFile"/>
+	<property name="exportmap" value="exportmap"/>
+	<property name="jdk.home" value="C:/Program Files/Java/JavaCard"/>
+	<property name="javacardkit.home" value="C:/Program Files/Java/JavaCard"/>
+	<property name="javacardkit.exports" value="${javacardkit.home}/api_export_files"/>
+	<property name="javacardkit.bin" value="${javacardkit.home}/bin"/>
+	<property name="javacardkit.lib" value="${javacardkit.home}/lib"/>
+	<property name="javacardkit.ant" value="${javacardkit.home}/ant-tasks/lib"/>
 
-   <target name="clean">
-      <delete dir="${applet.builddir}"/>
-      <delete dir="${applet.deploydir}"/>
-   </target>
+	<!-- Note: PLEASE DON'T MODIFY ANY OF THE REMAINING BUILD FILE -->
+	<!-- definitions for tasks for Java Card tools -->
+	<taskdef name="apdutool"
+			 classname="com.sun.javacard.ant.tasks.APDUToolTask"
+			 classpath="${javacardkit.ant}/jctasks.jar"/>
+	<taskdef name="capgen"
+			 classname="com.sun.javacard.ant.tasks.CapgenTask"
+			 classpath="${javacardkit.ant}/jctasks.jar"/>
+	<taskdef name="maskgen"
+			 classname="com.sun.javacard.ant.tasks.MaskgenTask"
+			 classpath="${javacardkit.ant}/jctasks.jar"/>
+	<taskdef name="deploycap"
+			 classname="com.sun.javacard.ant.tasks.DeployCapTask"
+			 classpath="${javacardkit.ant}/jctasks.jar"/>
+	<taskdef name="exp2text"
+			 classname="com.sun.javacard.ant.tasks.Exp2TextTask"
+			 classpath="${javacardkit.ant}/jctasks.jar"/>
+	<taskdef name="convert"
+			 classname="com.sun.javacard.ant.tasks.ConverterTask"
+			 classpath="${javacardkit.ant}/jctasks.jar"/>
+	<taskdef name="verifyexport"
+			 classname="com.sun.javacard.ant.tasks.VerifyExpTask"
+			 classpath="${javacardkit.ant}/jctasks.jar"/>
+	<taskdef name="verifycap"
+			 classname="com.sun.javacard.ant.tasks.VerifyCapTask"
+			 classpath="${javacardkit.ant}/jctasks.jar"/>
+	<taskdef name="verifyrevision"
+			 classname="com.sun.javacard.ant.tasks.VerifyRevTask"
+			 classpath="${javacardkit.ant}/jctasks.jar"/>
+	<taskdef name="scriptgen"
+			 classname="com.sun.javacard.ant.tasks.ScriptgenTask"
+			 classpath="${javacardkit.ant}/jctasks.jar"/>
+	<typedef name="appletnameaid"
+			 classname="com.sun.javacard.ant.types.AppletNameAID"
+			 classpath="${javacardkit.ant}/jctasks.jar"/>
+	<typedef name="jcainputfile"
+			 classname="com.sun.javacard.ant.types.JCAInputFile"
+			 classpath="${javacardkit.ant}/jctasks.jar"/>
+	<typedef name="exportfiles"
+			 classname="org.apache.tools.ant.types.FileSet"
+			 classpath="${javacardkit.ant}/jctasks.jar"/>
 
-   <target name="help">
-      <echo message="build-applet:  Builds the Java Card applet"/>
-      <echo message="verify-applet: Optionally converts and verifies the applet"/>
-      <echo message="deploy-applet: Converts and deploys the applet"/>
-      <echo message="run-script:    Runs the applet with a script file after deployed"/>
-      <echo message="start-cad:     Starts CAD simulator after applet deployed"/>
-      <echo message="build-host:    Builds the host application"/>
-      <echo message="run-host:      Runs the host application once built and CAD started"/>
-      <echo message="clean:         Removes all class files"/>
-   </target>   
+	<!-- set the classpath at minimum to the Java Card API but also for -->
+	<!-- all other APIs needed in the project-->
+	<path id="classpath">
+		<pathelement path="${javacardkit.lib}/api.jar"/>
+		<pathelement path="${javacardkit.lib}/converter.jar"/>
+		<pathelement path="${javacardkit.lib}/offcardverifier.jar"/>
+		<pathelement path="${javacardkit.lib}/jcrmiclientframework.jar"/>
+		<pathelement path="${javacardkit.lib}/scriptgen.jar"/>
+		<pathelement path="${javacardkit.lib}/apdutool.jar"/>
+		<pathelement path="${javacardkit.lib}/apduio.jar"/>
+		<pathelement path="${basedir}"/>
+	</path>
+
+	<!-- set the export path to the Java Card export files -->
+	<path id="exportpath">
+		<pathelement path="${javacardkit.exports}"/>
+		<pathelement path="${applet.builddir}"/>
+	</path>
+
+	<target name="build-applet">
+		<mkdir dir="${applet.builddir}"/>
+		<javac debug="yes" optimize="no" source="1.5" target="1.5"
+			   srcdir="${applet.sourcedir}/${applet.package}"
+			   destdir="${applet.builddir}">
+			<classpath refid="classpath"/>
+		</javac>
+	</target>
+
+	<target name="convert-applet" depends="build-applet">
+		<convert CAP="true" packagename="${applet.package}"
+				 packageaid="${package.aid}" majorminorversion="1.0"
+				 classdir="${applet.builddir}" outputdirectory="${applet.builddir}"
+				 verbose="${verbose}">
+			<appletnameaid appletname="${applet.package}/${applet.name}"
+						   aid="${applet.aid}"/>
+			<exportpath refid="exportpath"/>
+			<classpath refid="classpath"/>
+		</convert>
+	</target>
+
+	<target name="verify-applet" depends="convert-applet">
+		<verifycap
+				CapFile="${applet.builddir}/${applet.package}/javacard/${applet.package}.cap">
+			<exportfiles dir="${javacardkit.exports}">
+				<include name="**/io.exp"/>
+				<include name="**/lang.exp"/>
+				<include name="**/rmi.exp"/>
+				<include name="**/framework.exp"/>
+				<include name="**/service.exp"/>
+				<include name="**/security.exp"/>
+				<include name="**/crypto.exp"/>
+			</exportfiles>
+			<classpath refid="classpath"/>
+		</verifycap>
+	</target>
+
+	<target name="deploy-applet" depends="convert-applet">
+		<mkdir dir="${applet.deploydir}"/>
+		<deploycap outEEFile="${applet.deploydir}/${deploy.name}"
+				   CrefExe="${javacardkit.home}/bin/cref.exe"
+				   CapFile="${applet.builddir}/${applet.package}/javacard/${applet.package}.cap">
+			<classpath refid="classpath"/>
+		</deploycap>
+	</target>
+
+	<target name="run-script">
+		<apdutool scriptFile="${applet.scriptdir}/${script.name}"
+				  inEEFile="${applet.deploydir}/${deploy.name}"
+				  outEEFile="${applet.deploydir}/${deploy.name}"
+				  CheckDownloadFailure="false"
+				  CrefExe="${javacardkit.home}/bin/cref.exe">
+			<classpath refid="classpath"/>
+		</apdutool>
+	</target>
+
+	<target name="start-cad">
+		<exec dir="${basedir}" executable="${javacardkit.bin}/cref.exe">
+			<arg line="-i ${applet.deploydir}/${deploy.name}"/>
+			<arg line="-o ${applet.deploydir}/${deploy.name}"/>
+		</exec>
+	</target>
+
+	<target name="build-host">
+		<mkdir dir="${host.builddir}"/>
+		<javac debug="yes" optimize="no" includeantruntime="false"
+			   srcdir="${host.sourcedir}/${host.package}:${applet.sourcedir}/${applet.package}"
+			   destdir="${host.builddir}">
+			<classpath refid="classpath"/>
+		</javac>
+	</target>
+
+	<target name="run-host">
+		<java dir="${host.sourcedir}" className="${host.name}">
+			<classpath refid="classpath"/>
+		</java>
+	</target>
+
+	<target name="clean">
+		<delete dir="${applet.builddir}"/>
+		<delete dir="${applet.deploydir}"/>
+	</target>
+
+	<target name="help">
+		<echo message="build-applet:  Builds the Java Card applet"/>
+		<echo message="verify-applet: Optionally converts and verifies the applet"/>
+		<echo message="deploy-applet: Converts and deploys the applet"/>
+		<echo message="run-script:    Runs the applet with a script file after deployed"/>
+		<echo message="start-cad:     Starts CAD simulator after applet deployed"/>
+		<echo message="build-host:    Builds the host application"/>
+		<echo message="run-host:      Runs the host application once built and CAD started"/>
+		<echo message="clean:         Removes all class files"/>
+	</target>
 </project>

@@ -2,7 +2,7 @@
  A class that implements a JCRMI remote object holding a message
  @author Andrew Ensor
  */
-package nz.aut.hss.card;
+package nz.ac.aut.hss.card.client;
 
 import javacard.framework.JCSystem;
 import javacard.framework.SystemException;

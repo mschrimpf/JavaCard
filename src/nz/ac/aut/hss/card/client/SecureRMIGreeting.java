@@ -2,11 +2,12 @@
    A JCRMI remote interface that represents a secret message
    @see RemoteGreetingImpl.java
 */
-package nz.aut.hss.card;
+package nz.ac.aut.hss.card.client;
+
+import javacard.framework.UserException;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import javacard.framework.UserException;
 
 public interface SecureRMIGreeting extends Remote
 {

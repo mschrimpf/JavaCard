@@ -3,7 +3,7 @@
  Note that only the commandProperties have been implemented below
  @see SecureRMIDemoApplet
  */
-package nz.aut.hss.card;
+package nz.ac.aut.hss.card.client;
 
 import javacard.framework.APDU;
 import javacard.framework.ISO7816;
@@ -16,8 +16,7 @@ import javacard.security.CryptoException;
 import javacard.security.KeyBuilder;
 import javacardx.crypto.Cipher;
 
-public class Security extends BasicService
-		implements SecurityService {
+public class Security extends BasicService implements SecurityService {
 	private boolean appProviderAuthenticated, cardIssuerAuthenticated,
 			cardHolderAuthenticated;
 	private byte sessionProperties; // bits give session secure props
@@ -43,6 +42,11 @@ public class Security extends BasicService
 		cipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
 		// create a transient array of initial length 10 bytes
 		tempTransientArray = JCSystem.makeTransientByteArray((short) 10, JCSystem.CLEAR_ON_DESELECT);
+	}
+
+	public void setKey(final AESKey key) {
+		this.key = key;
+		cipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
 	}
 
 	// helper method that resets the security settings
