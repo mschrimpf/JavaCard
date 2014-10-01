@@ -16,12 +16,21 @@
 <project basedir="." default="help" name="SecureApplet">
 	<property name="verbose" value="true"/>
 
-	<property name="base.package" value="nz/ac/aut/hss/card"/>
+	<property name="base.package" value="nz.ac.aut.hss.card"/>
 	<property name="base.sourcedir" value="src"/>
 
 	<property name="applet.name" value="SecureApplet"/>
 	<property name="applet.sourcedir" value="${base.sourcedir}"/>
-	<property name="applet.package" value="${base.package}/client"/>
+	<property name="applet.package" value="${base.package}.client"/>
+	<loadresource property="applet.package-dir">
+		<propertyresource name="applet.package"/>
+		<filterchain>
+			<tokenfilter>
+				<filetokenizer/>
+				<replacestring from="." to="/"/>
+			</tokenfilter>
+		</filterchain>
+	</loadresource>
 	<property name="applet.scriptdir" value="."/>
 	<property name="applet.builddir" value="client-classes"/>
 	<property name="package.aid" value="0x10:0x20:0x30:0x40:0x50:0x04"/>
@@ -30,7 +39,16 @@
 
 	<property name="host.name" value="SecureAppletHost"/>
 	<property name="host.sourcedir" value="${base.sourcedir}"/>
-	<property name="host.package" value="${base.package}/host"/>
+	<property name="host.package" value="${base.package}.host"/>
+	<loadresource property="host.package-dir">
+		<propertyresource name="host.package"/>
+		<filterchain>
+			<tokenfilter>
+				<filetokenizer/>
+				<replacestring from="." to="/"/>
+			</tokenfilter>
+		</filterchain>
+	</loadresource>
 	<property name="host.builddir" value="host-classes"/>
 
 	<property name="applet.deploydir" value="EEPROM"/>
@@ -96,6 +114,8 @@
 		<pathelement path="${javacardkit.lib}/apdutool.jar"/>
 		<pathelement path="${javacardkit.lib}/apduio.jar"/>
 		<pathelement path="${basedir}"/>
+		<pathelement path="${host.builddir}"/>
+		<pathelement path="${applet.builddir}"/>
 	</path>
 
 	<!-- set the export path to the Java Card export files -->
@@ -107,18 +127,18 @@
 	<target name="build-applet">
 		<mkdir dir="${applet.builddir}"/>
 		<javac debug="yes" optimize="no" source="1.5" target="1.5"
-			   srcdir="${applet.sourcedir}/${applet.package}"
+			   srcdir="${applet.sourcedir}/${applet.package-dir}"
 			   destdir="${applet.builddir}">
 			<classpath refid="classpath"/>
 		</javac>
 	</target>
 
 	<target name="convert-applet" depends="build-applet">
-		<convert CAP="true" packagename="${applet.package}"
+		<convert CAP="true" packagename="${applet.package-dir}"
 				 packageaid="${package.aid}" majorminorversion="1.0"
 				 classdir="${applet.builddir}" outputdirectory="${applet.builddir}"
 				 verbose="${verbose}">
-			<appletnameaid appletname="${applet.package}/${applet.name}"
+			<appletnameaid appletname="${applet.package-dir}/${applet.name}"
 						   aid="${applet.aid}"/>
 			<exportpath refid="exportpath"/>
 			<classpath refid="classpath"/>
@@ -127,7 +147,7 @@
 
 	<target name="verify-applet" depends="convert-applet">
 		<verifycap
-				CapFile="${applet.builddir}/${applet.package}/javacard/${applet.package}.cap">
+				CapFile="${applet.builddir}/${applet.package-dir}/javacard/${applet.package-dir}.cap">
 			<exportfiles dir="${javacardkit.exports}">
 				<include name="**/io.exp"/>
 				<include name="**/lang.exp"/>
@@ -145,7 +165,7 @@
 		<mkdir dir="${applet.deploydir}"/>
 		<deploycap outEEFile="${applet.deploydir}/${deploy.name}"
 				   CrefExe="${javacardkit.home}/bin/cref.exe"
-				   CapFile="${applet.builddir}/${applet.package}/javacard/${applet.package}.cap">
+				   CapFile="${applet.builddir}/${applet.package-dir}/javacard/${applet.package-dir}.cap">
 			<classpath refid="classpath"/>
 		</deploycap>
 	</target>
@@ -167,17 +187,18 @@
 		</exec>
 	</target>
 
-	<target name="build-host">
+	<target name="build-host" depends="build-applet">
 		<mkdir dir="${host.builddir}"/>
 		<javac debug="yes" optimize="no" includeantruntime="false"
-			   srcdir="${host.sourcedir}/${host.package}:${applet.sourcedir}/${applet.package}"
+			   srcdir="${host.sourcedir}/${host.package-dir}"
 			   destdir="${host.builddir}">
 			<classpath refid="classpath"/>
 		</javac>
 	</target>
 
 	<target name="run-host">
-		<java dir="${host.sourcedir}" className="${host.name}">
+		<java dir="${host.builddir}" className="${host.package}.${host.name}" fork="true">
+			<!--${host.package}/-->
 			<classpath refid="classpath"/>
 		</java>
 	</target>
