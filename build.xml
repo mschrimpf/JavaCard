@@ -54,8 +54,7 @@
 	<property name="applet.deploydir" value="EEPROM"/>
 	<property name="deploy.name" value="EEFile"/>
 	<property name="exportmap" value="exportmap"/>
-	<property name="jdk.home" value="C:/Program Files/Java/JavaCard"/>
-	<property name="javacardkit.home" value="C:/Program Files/Java/JavaCard"/>
+	<property file="build-config.properties"/>
 	<property name="javacardkit.exports" value="${javacardkit.home}/api_export_files"/>
 	<property name="javacardkit.bin" value="${javacardkit.home}/bin"/>
 	<property name="javacardkit.lib" value="${javacardkit.home}/lib"/>
@@ -166,7 +165,6 @@
 		<deploycap outEEFile="${applet.deploydir}/${deploy.name}"
 				   CrefExe="${javacardkit.home}/bin/cref.exe"
 				   CapFile="${applet.builddir}/${applet.package-dir}/javacard/client.cap">
-			<!--CapFile="${applet.builddir}/${applet.package-dir}/javacard/${applet.package-dir}.cap">-->
 			<classpath refid="classpath"/>
 		</deploycap>
 	</target>
