@@ -34,10 +34,10 @@
 	<property name="applet.scriptdir" value="."/>
 	<property name="applet.builddir" value="client-classes"/>
 	<property name="package.aid" value="0x10:0x20:0x30:0x40:0x50:0x04"/>
-	<property name="applet.aid" value="0x10:0x20:0x30:0x40:0x50:0x05"/>
+	<property name="applet.aid" value="0x10:0x20:0x30:0x40:0x50:0x03"/>
 	<property name="script.name" value="SecureApplet.scr"/>
 
-	<property name="host.name" value="SecureAppletHost"/>
+	<property name="host.name" value="SecureHost"/>
 	<property name="host.sourcedir" value="${base.sourcedir}"/>
 	<property name="host.package" value="${base.package}.host"/>
 	<loadresource property="host.package-dir">
@@ -165,7 +165,8 @@
 		<mkdir dir="${applet.deploydir}"/>
 		<deploycap outEEFile="${applet.deploydir}/${deploy.name}"
 				   CrefExe="${javacardkit.home}/bin/cref.exe"
-				   CapFile="${applet.builddir}/${applet.package-dir}/javacard/${applet.package-dir}.cap">
+				   CapFile="${applet.builddir}/${applet.package-dir}/javacard/client.cap">
+			<!--CapFile="${applet.builddir}/${applet.package-dir}/javacard/${applet.package-dir}.cap">-->
 			<classpath refid="classpath"/>
 		</deploycap>
 	</target>
