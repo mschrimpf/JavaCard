@@ -17,6 +17,7 @@ package nz.ac.aut.hss.card.client;
 import javacard.framework.APDU;
 import javacard.framework.Applet;
 import javacard.framework.ISOException;
+import javacard.framework.OwnerPIN;
 import javacard.framework.service.Dispatcher;
 import javacard.framework.service.RMIService;
 import javacard.framework.service.SecurityService;
@@ -35,16 +36,16 @@ public class SecureApplet extends Applet {
 	protected SecureApplet(byte[] bArray, short bOffset, byte bLength) {
 		super();
 
-//		// allocate all the memory that an applet needs during its lifetime inside the constructor
-//		final OwnerPIN pin = new OwnerPIN(PIN_TRY_LIMIT, MAX_PIN_SIZE);
-//
-//		byte aidLength = bArray[bOffset]; // aid length
-//		bOffset = (short) (bOffset + aidLength + 1);
-//		byte cLen = bArray[bOffset]; // info length
-//		bOffset = (short) (bOffset + cLen + 1);
-//
-//		// The installation parameters contain the PIN initialization value
-//		pin.update(bArray, (short) (bOffset + 1), aidLength);
+		// allocate all the memory that an applet needs during its lifetime inside the constructor
+		final OwnerPIN pin = new OwnerPIN(PIN_TRY_LIMIT, MAX_PIN_SIZE);
+
+		byte aidLength = bArray[bOffset]; // aid length
+		bOffset = (short) (bOffset + aidLength + 1);
+		byte cLen = bArray[bOffset]; // info length
+		bOffset = (short) (bOffset + cLen + 1);
+
+		// The installation parameters contain the PIN initialization value
+		pin.update(bArray, (short) (bOffset + 1), aidLength);
 
 		// create a SecurityService to handle encryption of APDU
 		SecurityService security = new Security();

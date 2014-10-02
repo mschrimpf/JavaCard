@@ -31,17 +31,14 @@ public class SecureHost {
 			// select the RMIDemoApplet
 			System.out.println("Selecting secure applet");
 			byte[] appletAID = {0x10, 0x20, 0x30, 0x40, 0x50, 0x03};
-			jcRMI.selectApplet(appletAID,
-					JCRMIConnect.REF_WITH_INTERFACE_NAMES);
+			jcRMI.selectApplet(appletAID, JCRMIConnect.REF_WITH_INTERFACE_NAMES);
 			// obtain a proxy stub
 			System.out.println("Getting proxy for remote object");
 			SecureRMIGreeting remoteProxy = (SecureRMIGreeting) jcRMI.getInitialReference();
 			System.out.println("Securely calling a remote method");
-			System.out.println("Greeting is "
-					+ new String(remoteProxy.getGreeting()));
+			System.out.println("Greeting is " + new String(remoteProxy.getGreeting()));
 			remoteProxy.setGreeting("Ssshhhhhh!".getBytes());
-			System.out.println("Greeting is "
-					+ new String(remoteProxy.getGreeting()));
+			System.out.println("Greeting is " + new String(remoteProxy.getGreeting()));
 
 //			System.out.println("Getting public key");
 //			RemoteObject remoteProxy = (RemoteObject) jcRMI.getInitialReference();
