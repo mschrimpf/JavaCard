@@ -1,5 +1,6 @@
 package nz.ac.aut.hss.card.client;
 
+import javacard.framework.ISOException;
 import javacard.framework.UserException;
 import javacard.framework.service.CardRemoteObject;
 import javacard.security.AESKey;
@@ -26,19 +27,18 @@ public class RemoteObjectImpl implements RemoteObject {
 		CardRemoteObject.export(this); // export this remote object
 	}
 
-	public short enterPIN(byte[] pinBytes) throws RemoteException, UserException {
+	public void enterPIN(byte[] pinBytes) throws RemoteException, UserException {
 		short offset = 0;
 		byte length = (byte) pinBytes.length;
 		if (applet.checkPIN(pinBytes, offset, length)) {
-			return -1;
+			return; // works
 		}
-		final short triesRemaining = applet.getPINTriesRemaining();
-		if (triesRemaining < 1) {
-			// delete data if pin entered wrongly too many times
+		if (applet.getPINTriesRemaining() < 1) {
+			// delete data
 			publicKey.clearKey();
 			security.clearKey();
 		}
-		return triesRemaining;
+		ISOException.throwIt(SW_VERIFICATION_FAILED);
 	}
 
 	public PublicKey getPublicKey() throws RemoteException, UserException {

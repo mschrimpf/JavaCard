@@ -22,7 +22,9 @@ public class Security extends BasicService implements SecurityService {
 	private byte sessionProperties; // bits give session secure props
 	private byte commandProperties; // bits give command secure props
 	private AESKey key;
-	public static final byte[] IV_BYTES = {66, 49, 70, 39, 120, -90, 81, -83, 60, -19, 6, 123,
+	private byte[] keyBytes = {103, -125, -92, 79, -126, -49, 48, -84, -85, 113,
+			-13, 41, -58, -106, -17, 31}; // 16 bytes for a 128-bit AES cipher
+	private byte[] ivBytes = {66, 49, 70, 39, 120, -90, 81, -83, 60, -19, 6, 123,
 			53, 91, -80, -89}; // 16 bytes (one block) initialization vector
 	private Cipher cipher; // AES cipher in CBC mode with no padding
 	private byte[] tempTransientArray; //may be reused so use with care
@@ -45,7 +47,6 @@ public class Security extends BasicService implements SecurityService {
 	public void setKey(final AESKey key) {
 		this.key = key;
 		cipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
-		cipher.init(key, Cipher.MODE_ENCRYPT, IV_BYTES, (short) 0, (short) IV_BYTES.length);
 	}
 
 	// helper method that resets the security settings
@@ -64,41 +65,40 @@ public class Security extends BasicService implements SecurityService {
 		if (selectingApplet()) {  // APDU is for selecting applet so clear security settings
 			resetSecuritySettings();
 			return false; // allow other Services to preprocess if needed
-		}
-		if (!apdu.isSecureMessagingCLA()) {  // APDU CLA byte does not indicate secure messaging
+		} else if (!apdu.isSecureMessagingCLA()) {  // APDU CLA byte does not indicate secure messaging
 			// clear the appropriate command security properties
 			commandProperties &=
 					~(SecurityService.PROPERTY_INPUT_CONFIDENTIALITY |
 							SecurityService.PROPERTY_OUTPUT_CONFIDENTIALITY);
 			return false; // allow other Services to preprocess if needed
+		} else {  // set the appropriate command security properties
+			commandProperties |=
+					(SecurityService.PROPERTY_INPUT_CONFIDENTIALITY |
+							SecurityService.PROPERTY_OUTPUT_CONFIDENTIALITY);
+			// get the incoming APDU buffer
+			byte[] buffer = apdu.getBuffer();
+			byte lc = buffer[ISO7816.OFFSET_LC]; // padded length
+			byte le = buffer[(short) (ISO7816.OFFSET_LC + lc + 1)];
+			// decrypt the data field in the command APDU
+			if (lc % BLOCK_SIZE != 0)
+				CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
+			if (!key.isInitialized())
+				key.setKey(keyBytes, (short) 0); // (re)initialize key
+			cipher.init(key, Cipher.MODE_DECRYPT, ivBytes, (short) 0,
+					(short) ivBytes.length);
+			byte[] deciphertext = getTransientArray(lc);
+			cipher.doFinal(buffer, ISO7816.OFFSET_CDATA, lc, deciphertext,
+					(short) 0);
+			byte numPadding = deciphertext[(short) (lc - 1)];
+			byte unpaddedLength = (byte) (lc - numPadding);
+			Util.arrayCopyNonAtomic(deciphertext, (short) 0,
+					buffer, ISO7816.OFFSET_CDATA, unpaddedLength);
+			buffer[ISO7816.OFFSET_LC] = unpaddedLength;
+			buffer[(short) (ISO7816.OFFSET_LC + unpaddedLength + 1)] = le;
+			// reset the CLA security bits
+			buffer[ISO7816.OFFSET_CLA] &= ~CLA_SECURITY_BITS_MASK;
+			return true; // don't allow any other preprocessing
 		}
-		if (key == null || !key.isInitialized()) {
-			return false;
-		}
-
-		// set the appropriate command security properties
-		commandProperties |=
-				(SecurityService.PROPERTY_INPUT_CONFIDENTIALITY |
-						SecurityService.PROPERTY_OUTPUT_CONFIDENTIALITY);
-		// get the incoming APDU buffer
-		byte[] buffer = apdu.getBuffer();
-		byte lc = buffer[ISO7816.OFFSET_LC]; // padded length
-		byte le = buffer[(short) (ISO7816.OFFSET_LC + lc + 1)];
-		// decrypt the data field in the command APDU
-		if (lc % BLOCK_SIZE != 0)
-			CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
-		byte[] deciphertext = getTransientArray(lc);
-		cipher.doFinal(buffer, ISO7816.OFFSET_CDATA, lc, deciphertext,
-				(short) 0);
-		byte numPadding = deciphertext[(short) (lc - 1)];
-		byte unpaddedLength = (byte) (lc - numPadding);
-		Util.arrayCopyNonAtomic(deciphertext, (short) 0,
-				buffer, ISO7816.OFFSET_CDATA, unpaddedLength);
-		buffer[ISO7816.OFFSET_LC] = unpaddedLength;
-		buffer[(short) (ISO7816.OFFSET_LC + unpaddedLength + 1)] = le;
-		// reset the CLA security bits
-		buffer[ISO7816.OFFSET_CLA] &= ~CLA_SECURITY_BITS_MASK;
-		return true; // don't allow any other preprocessing
 	}
 
 	// overridden method of BasicService that performs encryption
@@ -107,33 +107,34 @@ public class Security extends BasicService implements SecurityService {
 	public boolean processDataOut(APDU apdu) {
 		if (selectingApplet())
 			return false; //allow other Services to postprocess if needed
-		if (key == null || !key.isInitialized()) {
-			return false;
+		else {  // get outgoing APDU buffer (CLA,INS,SW1,SW2,Le,data field)
+			byte[] buffer = apdu.getBuffer();
+			// encrypt the data field in response APDU
+			if (!key.isInitialized())
+				key.setKey(keyBytes, (short) 0); // (re)initialize key
+			cipher.init(key, Cipher.MODE_ENCRYPT, ivBytes, (short) 0,
+					(short) ivBytes.length);
+			byte unpaddedLength = (byte) (buffer[OFFSET_OUT_LA] & 0xFF);
+			// pad the buffer segment to have blocks of length BLOCK_SIZE
+			// bytes as per PKCS#5 padding scheme where the padding bytes
+			// always each give the number of padded bytes
+			short numBlocks = (short) ((short) (unpaddedLength + BLOCK_SIZE)
+					/ BLOCK_SIZE);
+			short paddedLength = (short) (numBlocks * BLOCK_SIZE);
+			byte[] padded = getTransientArray(paddedLength);
+			Util.arrayCopyNonAtomic(buffer, OFFSET_OUT_RDATA, padded,
+					(short) 0, unpaddedLength);
+			byte numPadding = (byte) (paddedLength - unpaddedLength);
+			for (short i = unpaddedLength; i < paddedLength; i++)
+				padded[i] = numPadding;
+			if ((short) (OFFSET_OUT_RDATA - 1 + paddedLength) > buffer.length)
+				// outgoing buffer can not accommodate the padding
+				CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
+			cipher.doFinal(padded, (short) 0, (short) paddedLength, buffer,
+					OFFSET_OUT_RDATA);
+			buffer[OFFSET_OUT_LA] = (byte) paddedLength;
+			return true; // don't allow any other postprocessing
 		}
-
-		// get outgoing APDU buffer (CLA,INS,SW1,SW2,Le,data field)
-		byte[] buffer = apdu.getBuffer();
-		// encrypt the data field in response APDU
-		byte unpaddedLength = (byte) (buffer[OFFSET_OUT_LA] & 0xFF);
-		// pad the buffer segment to have blocks of length BLOCK_SIZE
-		// bytes as per PKCS#5 padding scheme where the padding bytes
-		// always each give the number of padded bytes
-		short numBlocks = (short) ((short) (unpaddedLength + BLOCK_SIZE)
-				/ BLOCK_SIZE);
-		short paddedLength = (short) (numBlocks * BLOCK_SIZE);
-		byte[] padded = getTransientArray(paddedLength);
-		Util.arrayCopyNonAtomic(buffer, OFFSET_OUT_RDATA, padded,
-				(short) 0, unpaddedLength);
-		byte numPadding = (byte) (paddedLength - unpaddedLength);
-		for (short i = unpaddedLength; i < paddedLength; i++)
-			padded[i] = numPadding;
-		if ((short) (OFFSET_OUT_RDATA - 1 + paddedLength) > buffer.length)
-			// outgoing buffer can not accommodate the padding
-			CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
-		cipher.doFinal(padded, (short) 0, (short) paddedLength, buffer,
-				OFFSET_OUT_RDATA);
-		buffer[OFFSET_OUT_LA] = (byte) paddedLength;
-		return true; // don't allow any other postprocessing
 	}
 
 	// returns whether specified principal (APP_PROVIDER, CARD_ISSUER,

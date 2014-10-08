@@ -31,6 +31,7 @@ public class SecureApplet extends Applet {
 	private final static byte PIN_TRY_LIMIT = (byte) 0x03;
 	/** maximum size PIN */
 	private final static byte MAX_PIN_SIZE = (byte) 0x08;
+	private final static byte PIN_BYTES = (byte) 0x04;
 
 	private final Dispatcher dispatcher;
 	private OwnerPIN pin;
@@ -75,7 +76,7 @@ public class SecureApplet extends Applet {
 			return;
 		// check whether the CLA is suitable for this applet
 		if (cla != APPLET_CLA) {
-			ISOException.throwIt(ISO7816.SW_CLA_NOT_SUPPORTED);
+//			ISOException.throwIt(ISO7816.SW_CLA_NOT_SUPPORTED);
 		}
 		// process the instruction
 		switch (ins) {
@@ -94,29 +95,18 @@ public class SecureApplet extends Applet {
 	}
 
 	private void setPin(final APDU apdu) {
+    
 		if (pin != null) // already set
 			ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
 
+            
+          byte[] buffer = apdu.getBuffer();
+          byte pinLength = buffer[ISO7816.OFFSET_LC];
 		// allocate all the memory that an applet needs during its lifetime inside the constructor
 		pin = new OwnerPIN(PIN_TRY_LIMIT, MAX_PIN_SIZE);
-//
-//		byte aidLength = bArray[bOffset]; // aid length
-//		bOffset = (short) (bOffset + aidLength + 1);
-//		byte pinLength = PIN_BYTES; // aidLength;
-////
-////		// The installation parameters contain the PIN initialization value
-//		pin.update(bArray, (short) (bOffset + 1), pinLength);
+        pin.update(buffer, ISO7816.OFFSET_CDATA, pinLength);
 	}
-
-//	public boolean select() {
-//		// The applet declines to be selected if the pin is blocked.
-//		return pin.getTriesRemaining() > 0;
-//	}
-//
-//	public void deselect() {  // perform session specific cleanup
-//		pin.reset(); // if PIN validated then reset the tries
-//	}
-
+    
 	public boolean checkPIN(final byte[] pinBytes, final short offset, final byte length) {
 		return pin.check(pinBytes, offset, length);
 	}

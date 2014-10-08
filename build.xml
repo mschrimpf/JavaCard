@@ -55,6 +55,7 @@
 	<property name="deploy.name" value="EEFile"/>
 	<property name="exportmap" value="exportmap"/>
 	<property file="build-config.properties"/>
+    
 	<property name="javacardkit.exports" value="${javacardkit.home}/api_export_files"/>
 	<property name="javacardkit.bin" value="${javacardkit.home}/bin"/>
 	<property name="javacardkit.lib" value="${javacardkit.home}/lib"/>
@@ -113,8 +114,6 @@
 		<pathelement path="${javacardkit.lib}/apdutool.jar"/>
 		<pathelement path="${javacardkit.lib}/apduio.jar"/>
 		<pathelement path="${basedir}"/>
-		<pathelement path="${host.builddir}"/>
-		<pathelement path="${applet.builddir}"/>
 	</path>
 	<!--<pathelement path="${host.builddir}"/>-->
 	<!--<pathelement path="${applet.builddir}"/>-->
@@ -132,7 +131,7 @@
 		<delete dir="${applet.deploydir}"/>
 	</target>
 
-	<target name="build-applet">
+	<target name="build-applet" depends="clean-applet">
 		<mkdir dir="${applet.builddir}"/>
 		<javac debug="yes" optimize="no" source="1.5" target="1.5"
 			   srcdir="${applet.sourcedir}/${applet.package-dir}"
@@ -141,7 +140,7 @@
 		</javac>
 	</target>
 
-	<target name="convert-applet">
+	<target name="convert-applet" depends="build-applet">
 		<convert CAP="true" packagename="${applet.package-dir}"
 				 packageaid="${package.aid}" majorminorversion="1.0"
 				 classdir="${applet.builddir}" outputdirectory="${applet.builddir}"
@@ -178,7 +177,7 @@
 		</deploycap>
 	</target>
 
-	<target name="run-script">
+	<target name="run-script" depends="deploy-applet">
 		<apdutool scriptFile="${applet.scriptdir}/${script.name}"
 				  inEEFile="${applet.deploydir}/${deploy.name}"
 				  outEEFile="${applet.deploydir}/${deploy.name}"
@@ -188,16 +187,14 @@
 		</apdutool>
 	</target>
 
-	<target name="install-applet" depends="clean-applet,build-applet,deploy-applet,run-script">
-		<echo message="Applet installed"/>
-	</target>
-
 	<target name="start-cad">
 		<exec dir="${basedir}" executable="${javacardkit.bin}/cref.exe">
 			<arg line="-i ${applet.deploydir}/${deploy.name}"/>
 			<arg line="-o ${applet.deploydir}/${deploy.name}"/>
 		</exec>
 	</target>
+
+	<target name="build-and-run-client" depends="clean-applet,build-applet,deploy-applet,run-script,start-cad"/>
 
 	<!-- HOST -->
 
@@ -220,6 +217,8 @@
 	<target name="clean-host">
 		<delete dir="${host.builddir}"/>
 	</target>
+
+	<target name="build-and-run-host" depends="clean-host,build-host,run-host"/>
 
 	<!-- OTHER -->
 	<target name="clean" depends="clean-applet,clean-host"/>
