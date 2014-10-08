@@ -15,7 +15,7 @@ public interface RemoteObject extends Remote {
 	/**
 	 * @return -1 if the pin entered is correct, the amount of tries remaining otherwise
 	 */
-	public short enterPIN(byte[] pinBytes) throws RemoteException, UserException;
+	public short checkPIN(byte[] pinBytes) throws RemoteException, UserException;
 
 	public PublicKey getPublicKey() throws RemoteException, UserException;
 

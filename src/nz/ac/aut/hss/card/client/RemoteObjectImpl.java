@@ -1,7 +1,10 @@
 package nz.ac.aut.hss.card.client;
 
+import javacard.framework.ISO7816;
+import javacard.framework.ISOException;
 import javacard.framework.UserException;
 import javacard.framework.service.CardRemoteObject;
+import javacard.framework.service.SecurityService;
 import javacard.security.AESKey;
 import javacard.security.PublicKey;
 
@@ -27,7 +30,7 @@ public class RemoteObjectImpl implements RemoteObject {
 		CardRemoteObject.export(this); // export this remote object
 	}
 
-	public short enterPIN(byte[] pinBytes) throws RemoteException, UserException {
+	public short checkPIN(byte[] pinBytes) throws RemoteException, UserException {
 		short offset = 0;
 		byte length = (byte) pinBytes.length;
 		if (applet.checkPIN(pinBytes, offset, length)) {
@@ -42,6 +45,7 @@ public class RemoteObjectImpl implements RemoteObject {
 		return triesRemaining;
 	}
 
+	// TODO might not be able to transfer arbitrary objects
 	public PublicKey getPublicKey() throws RemoteException, UserException {
 		assurePINAndConfidentiality();
 		return publicKey;
@@ -53,10 +57,10 @@ public class RemoteObjectImpl implements RemoteObject {
 	}
 
 	private void assurePINAndConfidentiality() throws UserException {
-//		if (!applet.isPINValidated())
-//			ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
-//		if (!security.isCommandSecure
-//				(SecurityService.PROPERTY_OUTPUT_CONFIDENTIALITY))
-//			UserException.throwIt(REQUEST_DENIED);
+		if (!applet.isPINValidated())
+			ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
+		if (!security.isCommandSecure
+				(SecurityService.PROPERTY_OUTPUT_CONFIDENTIALITY))
+			UserException.throwIt(REQUEST_DENIED);
 	}
 }

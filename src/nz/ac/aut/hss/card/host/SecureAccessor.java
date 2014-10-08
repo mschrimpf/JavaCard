@@ -4,7 +4,6 @@ import com.sun.javacard.clientlib.CardAccessor;
 
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -21,8 +20,6 @@ public class SecureAccessor implements CardAccessor {
 	private CardAccessor ca;
 	private SecretKey key;
 	private IvParameterSpec initVector;
-	private byte[] keyBytes = {103, -125, -92, 79, -126, -49, 48, -84, -85, 113,
-			-13, 41, -58, -106, -17, 31}; // 16 bytes for a 128-bit AES cipher
 	private byte[] ivBytes = {66, 49, 70, 39, 120, -90, 81, -83, 60, -19, 6, 123,
 			53, 91, -80, -89}; // 16 bytes (one block) initialization vector
 	private Cipher cipher; // AES cipher in CBC mode with no padding
@@ -41,7 +38,11 @@ public class SecureAccessor implements CardAccessor {
 
 	public SecureAccessor(CardAccessor ca) {
 		this.ca = ca;
-		key = new SecretKeySpec(keyBytes, "AES");
+	}
+
+	public void setKey(SecretKey key) {
+//		key = new SecretKeySpec(keyBytes, "AES");
+		this.key = key;
 		initVector = new IvParameterSpec(ivBytes);
 		try {
 			cipher = Cipher.getInstance("AES/CBC/NoPadding");
@@ -65,7 +66,7 @@ public class SecureAccessor implements CardAccessor {
 		byte ins = sendData[OFFSET_INS];
 		byte lc = sendData[OFFSET_LC];
 		// check if APDU is for selecting applet
-		if (cla == CLA_ISO7816 && ins == INS_SELECT)
+		if ((cla == CLA_ISO7816 && ins == INS_SELECT) || key == null)
 			return ca.exchangeAPDU(sendData);
 		else {  // encrypt the data field in the command APDU
 			byte[] plaintext = pad(sendData, OFFSET_CDATA, lc);

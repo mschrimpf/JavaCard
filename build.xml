@@ -225,13 +225,14 @@
 	<target name="clean" depends="clean-applet,clean-host"/>
 
 	<target name="help">
-		<echo message="build-applet:  Builds the Java Card applet"/>
-		<echo message="verify-applet: Optionally converts and verifies the applet"/>
-		<echo message="deploy-applet: Converts and deploys the applet"/>
-		<echo message="run-script:    Runs the applet with a script file after deployed"/>
-		<echo message="start-cad:     Starts CAD simulator after applet deployed"/>
-		<echo message="build-host:    Builds the host application"/>
-		<echo message="run-host:      Runs the host application once built and CAD started"/>
-		<echo message="clean:         Removes all class files"/>
+		<echo message="build-applet:   Builds the Java Card applet"/>
+		<echo message="verify-applet:  Optionally converts and verifies the applet"/>
+		<echo message="deploy-applet:  Converts and deploys the applet"/>
+		<echo message="run-script:     Runs the applet with a script file after deployed"/>
+		<echo message="install-applet: Cleans, builds and deploys the applet and runs the installer-script on it"/>
+		<echo message="start-cad:      Starts CAD simulator after applet deployed"/>
+		<echo message="build-host:     Builds the host application"/>
+		<echo message="run-host:       Runs the host application once built and CAD started"/>
+		<echo message="clean:          Removes all class files"/>
 	</target>
 </project>

@@ -3,7 +3,6 @@ package nz.ac.aut.hss.card.host;
 import com.sun.javacard.clientlib.ApduIOCardAccessor;
 import com.sun.javacard.clientlib.CardAccessor;
 import com.sun.javacard.rmiclientlib.JCRMIConnect;
-import javacard.security.PublicKey;
 import nz.ac.aut.hss.card.client.RemoteObject;
 
 import java.rmi.RemoteException;
@@ -42,21 +41,21 @@ public class SecureHost {
 			short pinTriesRemaining;
 			final byte[] incorrectPinBytes = {0x01, 0x02, 0x03, 0x04};
 			printPin("incorrect", incorrectPinBytes);
-			pinTriesRemaining = remoteProxy.enterPIN(incorrectPinBytes);
+			pinTriesRemaining = remoteProxy.checkPIN(incorrectPinBytes);
 			System.out.println("PIN is " +
 					(pinTriesRemaining == -1 ? "correct" : "incorrect - " + pinTriesRemaining + " attempts remaining"));
 
 
 			final byte[] pinBytes = {0x04, 0x03, 0x02, 0x01};
 			printPin("correct", pinBytes);
-			pinTriesRemaining = remoteProxy.enterPIN(pinBytes);
+			pinTriesRemaining = remoteProxy.checkPIN(pinBytes);
 			System.out.println("PIN is " +
 					(pinTriesRemaining == -1 ? "correct" : "incorrect - " + pinTriesRemaining + " attempts remaining"));
 
-			// public key
-			System.out.println("Retrieving public key");
-			PublicKey publicKey = remoteProxy.getPublicKey();
-			System.out.println("Public key is: " + publicKey);
+//			// public key
+//			System.out.println("Retrieving public key");
+//			PublicKey publicKey = remoteProxy.getPublicKey();
+//			System.out.println("Public key is: " + publicKey);
 
 //			System.out.println("Getting public key");
 //			RemoteObject remoteProxy = (RemoteObject) jcRMI.getInitialReference();

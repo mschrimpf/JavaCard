@@ -24,8 +24,7 @@ import javacard.security.PublicKey;
  * @see <a href="http://stackoverflow.com/questions/21284830/working-with-java-card-wallet">Stackoverflow Wallet</a>
  */
 public class SecureApplet extends Applet {
-	private static final byte APPLET_CLA = (byte) 0x80;
-	private static final byte SET_PIN = (byte) 0xAA;
+	private static final byte SET_PIN = (byte) 0xCC;
 
 	/** maximum number of incorrect tries before the PIN is blocked */
 	private final static byte PIN_TRY_LIMIT = (byte) 0x03;
@@ -43,7 +42,7 @@ public class SecureApplet extends Applet {
 		// create the remote object
 		final PublicKey publicKey = null;
 		final RemoteObject remoteObject = new RemoteObjectImpl(security, publicKey, this);
-//		// allocate an RMI service and dispatcher to process commands
+		// allocate an RMI service and dispatcher to process commands
 		dispatcher = new Dispatcher((short) 3); // three services added
 		dispatcher.addService(security, Dispatcher.PROCESS_INPUT_DATA); // preprocess command APDU
 		dispatcher.addService(new RMIService(remoteObject), Dispatcher.PROCESS_COMMAND);
@@ -65,17 +64,9 @@ public class SecureApplet extends Applet {
 	public void process(APDU apdu) throws ISOException {
 		// get the incoming APDU buffer
 		byte[] buffer = apdu.getBuffer();
-		// get the CLA but mask out the logical channel information
-		byte cla = (byte) (buffer[ISO7816.OFFSET_CLA] & (byte) 0xFC);
 		// get remaining command APDU header information from buffer
 		byte ins = buffer[ISO7816.OFFSET_INS];
-		// check whether command APDU is select and if so don't process
-		if (cla == ISO7816.CLA_ISO7816 && ins == ISO7816.INS_SELECT)
-			return;
-		// check whether the CLA is suitable for this applet
-		if (cla != APPLET_CLA) {
-			ISOException.throwIt(ISO7816.SW_CLA_NOT_SUPPORTED);
-		}
+
 		// process the instruction
 		switch (ins) {
 			case SET_PIN:
@@ -88,7 +79,7 @@ public class SecureApplet extends Applet {
 		}
 	}
 
-	public boolean isPinValidated() {
+	public boolean isPINValidated() {
 		return pin.isValidated();
 	}
 
