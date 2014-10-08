@@ -31,7 +31,6 @@ public class SecureApplet extends Applet {
 	private final static byte PIN_TRY_LIMIT = (byte) 0x03;
 	/** maximum size PIN */
 	private final static byte MAX_PIN_SIZE = (byte) 0x08;
-	private final static byte PIN_BYTES = (byte) 0x04;
 
 	private final Dispatcher dispatcher;
 	private OwnerPIN pin;
@@ -76,7 +75,7 @@ public class SecureApplet extends Applet {
 			return;
 		// check whether the CLA is suitable for this applet
 		if (cla != APPLET_CLA) {
-//			ISOException.throwIt(ISO7816.SW_CLA_NOT_SUPPORTED);
+			ISOException.throwIt(ISO7816.SW_CLA_NOT_SUPPORTED);
 		}
 		// process the instruction
 		switch (ins) {
@@ -95,7 +94,6 @@ public class SecureApplet extends Applet {
 	}
 
 	private void setPin(final APDU apdu) {
-    
 		if (pin != null) // already set
 			ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
 
