@@ -180,4 +180,8 @@ public class Security extends BasicService implements SecurityService {
 		}
 		return tempTransientArray;
 	}
+
+	public void clearKey() {
+		key.clearKey();
+	}
 }

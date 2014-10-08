@@ -113,9 +113,9 @@
 		<pathelement path="${javacardkit.lib}/apdutool.jar"/>
 		<pathelement path="${javacardkit.lib}/apduio.jar"/>
 		<pathelement path="${basedir}"/>
-		<pathelement path="${host.builddir}"/>
-		<pathelement path="${applet.builddir}"/>
 	</path>
+	<!--<pathelement path="${host.builddir}"/>-->
+	<!--<pathelement path="${applet.builddir}"/>-->
 
 	<!-- set the export path to the Java Card export files -->
 	<path id="exportpath">
@@ -130,7 +130,7 @@
 		<delete dir="${applet.deploydir}"/>
 	</target>
 
-	<target name="build-applet">
+	<target name="build-applet" depends="clean-applet">
 		<mkdir dir="${applet.builddir}"/>
 		<javac debug="yes" optimize="no" source="1.5" target="1.5"
 			   srcdir="${applet.sourcedir}/${applet.package-dir}"
@@ -176,7 +176,7 @@
 		</deploycap>
 	</target>
 
-	<target name="run-script">
+	<target name="run-script" depends="deploy-applet">
 		<apdutool scriptFile="${applet.scriptdir}/${script.name}"
 				  inEEFile="${applet.deploydir}/${deploy.name}"
 				  outEEFile="${applet.deploydir}/${deploy.name}"

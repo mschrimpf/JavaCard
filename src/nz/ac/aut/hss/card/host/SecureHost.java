@@ -3,7 +3,8 @@ package nz.ac.aut.hss.card.host;
 import com.sun.javacard.clientlib.ApduIOCardAccessor;
 import com.sun.javacard.clientlib.CardAccessor;
 import com.sun.javacard.rmiclientlib.JCRMIConnect;
-import nz.ac.aut.hss.card.client.SecureRMIGreeting;
+import javacard.security.PublicKey;
+import nz.ac.aut.hss.card.client.RemoteObject;
 
 import java.rmi.RemoteException;
 
@@ -30,15 +31,22 @@ public class SecureHost {
 			JCRMIConnect jcRMI = new JCRMIConnect(ca);
 			// select the RMIDemoApplet
 			System.out.println("Selecting secure applet");
-			byte[] appletAID = {0x10, 0x20, 0x30, 0x40, 0x50, 0x03};
+			byte[] appletAID = {0x10, 0x20, 0x30, 0x40, 0x50, 0x05};
 			jcRMI.selectApplet(appletAID, JCRMIConnect.REF_WITH_INTERFACE_NAMES);
 			// obtain a proxy stub
 			System.out.println("Getting proxy for remote object");
-			SecureRMIGreeting remoteProxy = (SecureRMIGreeting) jcRMI.getInitialReference();
-			System.out.println("Securely calling a remote method");
-			System.out.println("Greeting is " + new String(remoteProxy.getGreeting()));
-			remoteProxy.setGreeting("Ssshhhhhh!".getBytes());
-			System.out.println("Greeting is " + new String(remoteProxy.getGreeting()));
+			RemoteObject remoteProxy = (RemoteObject) jcRMI.getInitialReference();
+			System.out.println("Got remote object");
+			final byte[] pinBytes = {0x04, 0x03, 0x02, 0x01};
+			System.out.print("Entering PIN:");
+			for (byte pinByte : pinBytes) {
+				System.out.print(" " + pinByte);
+			}
+			System.out.println();
+			remoteProxy.enterPIN(pinBytes);
+			System.out.println("Retrieving public key");
+			PublicKey publicKey = remoteProxy.getPublicKey();
+			System.out.println("Public key is: " + publicKey);
 
 //			System.out.println("Getting public key");
 //			RemoteObject remoteProxy = (RemoteObject) jcRMI.getInitialReference();

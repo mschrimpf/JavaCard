@@ -9,12 +9,14 @@ echo "**** Select the InstallerApplet applet ****";
 echo "**** Use InstallerApplet to install SecureApplet ****";
 // command APDU: 0x80 0xB8 0x00 0x00 Lc AIDLength AppletAID 0x00 Le
 0x80 0xB8 0x00 0x00 0x08 0x06 0x10 0x20 0x30 0x40 0x50 0x05 0x00 0x7F;
-// 0x80 0xB8 0x12 0x34 0x08 0x06 0x10 0x20 0x30 0x40 0x50 0x05 0x00 0x7F;
-// INS 	   P1   P2	Lc  AIDlen<---------AID---------------> <-------PIN-------> ---- Le
 // response APDU: AppletAID 90 00 = SW_NO_ERROR
 // response APDU: 64 43 = Applet not found for installation
 // response APDU: 64 44 = AID already in use (applet already created)
 // also see http://askra.de/software/jcdocs/kit-user-2.2.2/cJDKinstaller.html#26867
+
+// echo "**** Setting PIN ****";
+// APPLET_CLA VERIFY_PIN_INS 0x00 0x00 | Lc pin bytes (4) 0x00 Le
+// 0x80 0xAA 0x00 0x00 0x04 0x03 0x02 0x01 0x7F
 
 // note no need to now select RMIDemoApplet here as RMIDemoHost will do this itself
 

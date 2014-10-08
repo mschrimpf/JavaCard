@@ -12,6 +12,9 @@ import java.rmi.RemoteException;
  * @created 30.09.2014
  */
 public interface RemoteObject extends Remote {
+	public void enterPIN(byte[] pinBytes) throws RemoteException, UserException;
+
 	public PublicKey getPublicKey() throws RemoteException, UserException;
+
 	public void setSecretKey(AESKey key) throws RemoteException, UserException;
 }
