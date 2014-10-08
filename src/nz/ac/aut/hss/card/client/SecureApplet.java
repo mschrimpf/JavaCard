@@ -62,8 +62,7 @@ public class SecureApplet extends Applet {
 			applet.register(bArray, (short) (bOffset + 1), aidLength);
 	}
 
-	public void process(APDU apdu)
-			throws ISOException {
+	public void process(APDU apdu) throws ISOException {
 		// get the incoming APDU buffer
 		byte[] buffer = apdu.getBuffer();
 		// get the CLA but mask out the logical channel information
@@ -97,14 +96,14 @@ public class SecureApplet extends Applet {
 		if (pin != null) // already set
 			ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
 
-            
-          byte[] buffer = apdu.getBuffer();
-          byte pinLength = buffer[ISO7816.OFFSET_LC];
+
+		byte[] buffer = apdu.getBuffer();
+		byte pinLength = buffer[ISO7816.OFFSET_LC];
 		// allocate all the memory that an applet needs during its lifetime inside the constructor
 		pin = new OwnerPIN(PIN_TRY_LIMIT, MAX_PIN_SIZE);
-        pin.update(buffer, ISO7816.OFFSET_CDATA, pinLength);
+		pin.update(buffer, ISO7816.OFFSET_CDATA, pinLength);
 	}
-    
+
 	public boolean checkPIN(final byte[] pinBytes, final short offset, final byte length) {
 		return pin.check(pinBytes, offset, length);
 	}
