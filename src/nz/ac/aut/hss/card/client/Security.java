@@ -13,7 +13,6 @@ import javacard.framework.service.BasicService;
 import javacard.framework.service.SecurityService;
 import javacard.security.AESKey;
 import javacard.security.CryptoException;
-import javacard.security.KeyBuilder;
 import javacardx.crypto.Cipher;
 
 public class Security extends BasicService implements SecurityService {
@@ -34,10 +33,6 @@ public class Security extends BasicService implements SecurityService {
 	public Security() {
 		super();
 		resetSecuritySettings();
-		// create a key that uses transient memory and so which must
-		// be reinitialized whenever applet is deselected
-		key = (AESKey) KeyBuilder.buildKey(KeyBuilder.TYPE_AES_TRANSIENT_DESELECT, KeyBuilder.LENGTH_AES_128, false);
-		cipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
 		// create a transient array of initial length 10 bytes
 		tempTransientArray = JCSystem.makeTransientByteArray((short) 10, JCSystem.CLEAR_ON_DESELECT);
 	}

@@ -14,6 +14,7 @@ import java.rmi.RemoteException;
 public class RemoteObjectImpl implements RemoteObject {
 	/** signal that PIN verification failed */
 	public final static short SW_VERIFICATION_FAILED = 0x6300;
+	private static final short REQUEST_DENIED = (short) 0x6003;
 
 	private final Security security;
 	private final PublicKey publicKey;
@@ -42,17 +43,20 @@ public class RemoteObjectImpl implements RemoteObject {
 	}
 
 	public PublicKey getPublicKey() throws RemoteException, UserException {
-		assurePINSet();
+		assurePINAndConfidentiality();
 		return publicKey;
 	}
 
 	public void setSecretKey(final AESKey key) throws RemoteException, UserException {
-		assurePINSet();
+		assurePINAndConfidentiality();
 		security.setKey(key);
 	}
 
-	private void assurePINSet() {
+	private void assurePINAndConfidentiality() throws UserException {
 //		if (!applet.isPINValidated())
 //			ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
+//		if (!security.isCommandSecure
+//				(SecurityService.PROPERTY_OUTPUT_CONFIDENTIALITY))
+//			UserException.throwIt(REQUEST_DENIED);
 	}
 }
