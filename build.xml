@@ -34,7 +34,7 @@
 	<property name="applet.scriptdir" value="."/>
 	<property name="applet.builddir" value="client-classes"/>
 	<property name="package.aid" value="0x10:0x20:0x30:0x40:0x50:0x04"/>
-	<property name="applet.aid" value="0x10:0x20:0x30:0x40:0x50:0x03"/>
+	<property name="applet.aid" value="0x10:0x20:0x30:0x40:0x50:0x05"/>
 	<property name="script.name" value="SecureApplet.scr"/>
 
 	<property name="host.name" value="SecureHost"/>
@@ -123,6 +123,13 @@
 		<pathelement path="${applet.builddir}"/>
 	</path>
 
+	<!-- CLIENT -->
+
+	<target name="clean-applet">
+		<delete dir="${applet.builddir}"/>
+		<delete dir="${applet.deploydir}"/>
+	</target>
+
 	<target name="build-applet">
 		<mkdir dir="${applet.builddir}"/>
 		<javac debug="yes" optimize="no" source="1.5" target="1.5"
@@ -186,6 +193,10 @@
 		</exec>
 	</target>
 
+	<target name="build-and-run-client" depends="clean-applet,build-applet,deploy-applet,run-script,start-cad"/>
+
+	<!-- HOST -->
+
 	<target name="build-host" depends="build-applet">
 		<mkdir dir="${host.builddir}"/>
 		<javac debug="yes" optimize="no" includeantruntime="false"
@@ -202,10 +213,14 @@
 		</java>
 	</target>
 
-	<target name="clean">
-		<delete dir="${applet.builddir}"/>
-		<delete dir="${applet.deploydir}"/>
+	<target name="clean-host">
+		<delete dir="${host.builddir}"/>
 	</target>
+
+	<target name="build-and-run-host" depends="clean-host,build-host,run-host"/>
+
+	<!-- OTHER -->
+	<target name="clean" depends="clean-applet,clean-host"/>
 
 	<target name="help">
 		<echo message="build-applet:  Builds the Java Card applet"/>
