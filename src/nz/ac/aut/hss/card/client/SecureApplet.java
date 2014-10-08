@@ -96,7 +96,6 @@ public class SecureApplet extends Applet {
 		if (pin != null) // already set
 			ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
 
-
 		byte[] buffer = apdu.getBuffer();
 		byte pinLength = buffer[ISO7816.OFFSET_LC];
 		// allocate all the memory that an applet needs during its lifetime inside the constructor
