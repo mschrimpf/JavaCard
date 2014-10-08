@@ -37,13 +37,23 @@ public class SecureHost {
 			System.out.println("Getting proxy for remote object");
 			RemoteObject remoteProxy = (RemoteObject) jcRMI.getInitialReference();
 			System.out.println("Got remote object");
+
+			// PIN
+			short pinTriesRemaining;
+			final byte[] incorrectPinBytes = {0x01, 0x02, 0x03, 0x04};
+			printPin("incorrect", incorrectPinBytes);
+			pinTriesRemaining = remoteProxy.enterPIN(incorrectPinBytes);
+			System.out.println("PIN is " +
+					(pinTriesRemaining == -1 ? "correct" : "incorrect - " + pinTriesRemaining + " attempts remaining"));
+
+
 			final byte[] pinBytes = {0x04, 0x03, 0x02, 0x01};
-			System.out.print("Entering PIN:");
-			for (byte pinByte : pinBytes) {
-				System.out.print(" " + pinByte);
-			}
-			System.out.println();
-			remoteProxy.enterPIN(pinBytes);
+			printPin("correct", pinBytes);
+			pinTriesRemaining = remoteProxy.enterPIN(pinBytes);
+			System.out.println("PIN is " +
+					(pinTriesRemaining == -1 ? "correct" : "incorrect - " + pinTriesRemaining + " attempts remaining"));
+
+			// public key
 			System.out.println("Retrieving public key");
 			PublicKey publicKey = remoteProxy.getPublicKey();
 			System.out.println("Public key is: " + publicKey);
@@ -64,5 +74,13 @@ public class SecureHost {
 				System.err.println("Unable to close card");
 			}
 		}
+	}
+
+	private static void printPin(final String pinDescription, final byte[] pinBytes) {
+		System.out.print("Entering " + pinDescription + " PIN:");
+		for (byte pinByte : pinBytes) {
+			System.out.print(" " + pinByte);
+		}
+		System.out.println();
 	}
 }
