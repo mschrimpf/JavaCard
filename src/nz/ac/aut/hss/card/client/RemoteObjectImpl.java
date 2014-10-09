@@ -5,7 +5,7 @@ import javacard.framework.ISOException;
 import javacard.framework.UserException;
 import javacard.framework.service.CardRemoteObject;
 import javacard.framework.service.SecurityService;
-import javacard.security.AESKey;
+import javacard.security.CryptoException;
 
 import java.rmi.RemoteException;
 
@@ -26,8 +26,14 @@ public class RemoteObjectImpl implements RemoteObject {
 
 	public RemoteObjectImpl(final Security security, final byte[] publicKeyBytes, final SecureApplet applet) {
 		// references
+		if(security == null)
+			ISOException.throwIt(ISO7816.SW_WRONG_DATA);
 		this.security = security;
+		if(publicKeyBytes == null)
+			ISOException.throwIt(ISO7816.SW_WRONG_DATA);
 		this.publicKeyBytes = publicKeyBytes;
+		if(applet == null)
+			ISOException.throwIt(ISO7816.SW_WRONG_DATA);
 		this.applet = applet;
 
 		// account details
@@ -92,13 +98,17 @@ public class RemoteObjectImpl implements RemoteObject {
 	}
 
 	public byte[] getPublicKeyBytes() throws RemoteException, UserException {
-		assurePIN();
 		return publicKeyBytes;
 	}
 
-	public void setSecretKey(final AESKey key) throws RemoteException, UserException {
-		assurePINAndConfidentiality();
-		security.setKey(key);
+	public void useAsymmetricEncryption() throws RemoteException, UserException {
+		security.usePrivateKey();
+	}
+
+	public void setSecretKey(final byte[] keyBytes) throws RemoteException, UserException {
+		if(keyBytes.length != KeySpec.SESSION_KEY_LENGTH)
+			CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
+		security.setKey(keyBytes);
 	}
 
 	private void assurePINAndConfidentiality() throws UserException {
@@ -126,18 +136,22 @@ public class RemoteObjectImpl implements RemoteObject {
 	// details
 
 	public byte[] getName() throws RemoteException, UserException {
+		assurePINAndConfidentiality();
 		return name;
 	}
 
 	public byte[] getAccountNumber() throws RemoteException, UserException {
+		assurePINAndConfidentiality();
 		return accNum;
 	}
 
 	public byte[] getExpiryDate() throws RemoteException, UserException {
+		assurePINAndConfidentiality();
 		return expiryDate;
 	}
 
 	public byte[] getSecurityCode() throws RemoteException, UserException {
+		assurePINAndConfidentiality();
 		return securityCode;
 	}
 }

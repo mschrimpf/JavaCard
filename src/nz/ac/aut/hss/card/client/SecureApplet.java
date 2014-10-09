@@ -35,19 +35,18 @@ public class SecureApplet extends Applet {
 
 	private final Dispatcher dispatcher;
 	private OwnerPIN pin;
-	private final RSAPrivateKey privateKey;
 
 	protected SecureApplet() {
 		super();
 
-		// create a SecurityService to handle encryption of APDU
-		final Security security = new Security();
-
 		// create key pair
 		final KeyPair keyPair = KeyUtil.createRSAPair();
-		this.privateKey = (RSAPrivateKey) keyPair.getPrivate();
+		final RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
 		final RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
 		final byte[] publicKeyBytes = KeyUtil.toBytes(publicKey);
+
+		// create a SecurityService to handle encryption of APDU
+		final Security security = new Security(privateKey);
 
 		// create the remote object
 		final RemoteObject remoteObject = new RemoteObjectImpl(security, publicKeyBytes, this);

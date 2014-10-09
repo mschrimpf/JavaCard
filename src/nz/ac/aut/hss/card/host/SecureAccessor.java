@@ -1,7 +1,7 @@
 package nz.ac.aut.hss.card.host;
 
 import com.sun.javacard.clientlib.CardAccessor;
-import javacard.security.PublicKey;
+import nz.ac.aut.hss.card.client.KeySpec;
 
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 
 /**
  * A CardAccessor that handles encryption and decryption of APDU that
@@ -18,17 +19,9 @@ import java.security.NoSuchAlgorithmException;
  * @see nz.ac.aut.hss.card.host.SecureHost
  */
 public class SecureAccessor implements CardAccessor {
-	private enum EncryptMode {
-		NONE, CLIENT_PUBLIC, SESSION
-	}
-
-	private EncryptMode mode;
-
 	private CardAccessor ca;
 	private SecretKey key;
 	private IvParameterSpec initVector;
-	private byte[] ivBytes = {66, 49, 70, 39, 120, -90, 81, -83, 60, -19, 6, 123,
-			53, 91, -80, -89}; // 16 bytes (one block) initialization vector
 	private Cipher cipher; // AES cipher in CBC mode with no padding
 	private static final byte BLOCK_SIZE = 16; // 16 byte cipher blocks
 	private static final byte CLA_SECURITY_BITS_MASK = (byte) 0x0C;
@@ -46,15 +39,27 @@ public class SecureAccessor implements CardAccessor {
 
 	public SecureAccessor(CardAccessor ca) {
 		this.ca = ca;
-		this.mode = EncryptMode.NONE;
 	}
 
-	public void setKey(SecretKey key) {
+	public void setSessionKey(SecretKey key) {
 //		key = new SecretKeySpec(keyBytes, "AES");
 		this.key = key;
-		initVector = new IvParameterSpec(ivBytes);
+		initVector = new IvParameterSpec(KeySpec.SESSION_IV_BYTES);
 		try {
 			cipher = Cipher.getInstance("AES/CBC/NoPadding");
+		} catch (NoSuchAlgorithmException e) {
+			System.err.println("Encryption algorithm not available: " + e);
+		} catch (NoSuchPaddingException e) {
+			System.err.println("Padding scheme not available: " + e);
+		}
+	}
+
+	public void setPublicKey(final PublicKey publicKey) {
+		if (publicKey == null)
+			throw new IllegalArgumentException("publicKey is null");
+		this.publicKey = publicKey;
+		try {
+			cipher = Cipher.getInstance("RSA/ECB/PKCS1PADDING");
 		} catch (NoSuchAlgorithmException e) {
 			System.err.println("Encryption algorithm not available: " + e);
 		} catch (NoSuchPaddingException e) {
@@ -65,15 +70,14 @@ public class SecureAccessor implements CardAccessor {
 	public byte[] exchangeAPDU(byte[] sendData) throws IOException {
 		if (DISPLAY_APDU) {
 			System.out.println("PLAINTEXT COMMAND APDU:");
-			for (int i = 0; i < sendData.length; i++)
-				System.out.print(" " + Integer.toHexString(sendData[i] & 0xFF));
+			for (final byte aSendData : sendData) System.out.print(" " + Integer.toHexString(aSendData & 0xFF));
 			System.out.println();
 		}
 		// get the CLA but mask out the logical channel information
 		byte cla = (byte) (sendData[OFFSET_CLA] & (byte) 0xFC);
 		byte ins = sendData[OFFSET_INS];
 		// check if APDU is for selecting applet
-		if ((cla == CLA_ISO7816 && ins == INS_SELECT) || mode == EncryptMode.NONE) {
+		if ((cla == CLA_ISO7816 && ins == INS_SELECT) || cipher == null) {
 			return ca.exchangeAPDU(sendData);
 		} else {  // encrypt the data field in the command APDU
 			byte[] encryptedCommand = encrypt(sendData);
@@ -180,10 +184,6 @@ public class SecureAccessor implements CardAccessor {
 		for (int i = unpaddedLength; i < paddedLength; i++)
 			padded[i] = numPadding;
 		return padded;
-	}
-
-	public void setPublicKey(final PublicKey publicKey) {
-		this.publicKey = publicKey;
 	}
 
 }

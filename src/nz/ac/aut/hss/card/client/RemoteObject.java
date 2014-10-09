@@ -1,7 +1,6 @@
 package nz.ac.aut.hss.card.client;
 
 import javacard.framework.UserException;
-import javacard.security.AESKey;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
@@ -18,7 +17,9 @@ public interface RemoteObject extends Remote {
 
 	public byte[] getPublicKeyBytes() throws RemoteException, UserException;
 
-	public void setSecretKey(AESKey key) throws RemoteException, UserException;
+	public void useAsymmetricEncryption() throws RemoteException, UserException;
+
+	public void setSecretKey(byte[] keyBytes) throws RemoteException, UserException;
 
 	// account details
 

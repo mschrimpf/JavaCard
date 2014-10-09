@@ -5,7 +5,7 @@ package nz.ac.aut.hss.card.client;
  * @created 09.10.2014
  */
 public class Authenticator {
-	private static byte getHash(byte[] message, int length) {
+	private static byte getHash(byte[] message, short length) {
 		byte result = message[0];
 		for (short i = 1; i < length; i++) {
 			result ^= message[i];
@@ -18,17 +18,17 @@ public class Authenticator {
 		for (short i = 0; i < originalmessage.length; i++) {
 			buffer[i] = originalmessage[i];
 		}
-		byte hash = getHash(originalmessage, originalmessage.length);
+		byte hash = getHash(originalmessage, (short) originalmessage.length);
 		buffer[originalmessage.length] = hash;
 		return buffer;
 	}
 
 	private static byte recalculateHash(byte[] message) {
-		return getHash(message, message.length - 1);
+		return getHash(message, (short) (message.length - 1));
 	}
 
 	public static boolean checkHash(byte[] message) {
-		return message[message.length - 1] == recalculateHash(message);
+		return message[(short) (message.length - 1)] == recalculateHash(message);
 	}
 
 	public static byte[] removeHash(final byte[] message) {

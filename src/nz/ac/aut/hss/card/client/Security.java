@@ -13,6 +13,8 @@ import javacard.framework.service.BasicService;
 import javacard.framework.service.SecurityService;
 import javacard.security.AESKey;
 import javacard.security.CryptoException;
+import javacard.security.KeyBuilder;
+import javacard.security.RSAPrivateKey;
 import javacardx.crypto.Cipher;
 
 public class Security extends BasicService implements SecurityService {
@@ -20,27 +22,38 @@ public class Security extends BasicService implements SecurityService {
 			cardHolderAuthenticated;
 	private byte sessionProperties; // bits give session secure props
 	private byte commandProperties; // bits give command secure props
-	private AESKey key;
-	public static final byte[] IV_BYTES = {66, 49, 70, 39, 120, -90, 81, -83, 60, -19, 6, 123,
-			53, 91, -80, -89}; // 16 bytes (one block) initialization vector
-	private Cipher cipher; // AES cipher in CBC mode with no padding
 	private byte[] tempTransientArray; //may be reused so use with care
-	private static final byte BLOCK_SIZE = 16; // 16 byte cipher blocks
+	private static final byte BLOCK_SIZE = 16; // 16 byte decryptCipher blocks
 	private static final byte CLA_SECURITY_BITS_MASK = (byte) 0x0C;
 	private static final byte OFFSET_OUT_LA = (byte) 4;
 	private static final byte OFFSET_OUT_RDATA = (byte) 5;
 
-	public Security() {
+	private final RSAPrivateKey privateKey;
+	private AESKey key;
+	private Cipher encryptCipher, decryptCipher;
+
+	public Security(final RSAPrivateKey privateKey) {
 		super();
+		if(privateKey == null)
+			CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
+		this.privateKey = privateKey;
 		resetSecuritySettings();
 		// create a transient array of initial length 10 bytes
 		tempTransientArray = JCSystem.makeTransientByteArray((short) 10, JCSystem.CLEAR_ON_DESELECT);
+		key = (AESKey) KeyBuilder.buildKey(KeyBuilder.TYPE_AES, KeySpec.SESSION_KEY_LENGTH, false);
 	}
 
-	public void setKey(final AESKey key) {
-		this.key = key;
-		cipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
-		cipher.init(key, Cipher.MODE_ENCRYPT, IV_BYTES, (short) 0, (short) IV_BYTES.length);
+	public void setKey(final byte[] keyBytes) {
+		key.setKey(keyBytes, (short) 0);
+//		encryptCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
+//		encryptCipher.init(key, Cipher.MODE_ENCRYPT, KeySpec.SESSION_IV_BYTES, (short) 0, (short) KeySpec.SESSION_IV_BYTES.length);
+//		decryptCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
+//		decryptCipher.init(key, Cipher.MODE_DECRYPT, KeySpec.SESSION_IV_BYTES, (short) 0, (short) KeySpec.SESSION_IV_BYTES.length);
+	}
+
+	public void usePrivateKey() {
+		decryptCipher = Cipher.getInstance(Cipher.ALG_RSA_PKCS1, false);
+		decryptCipher.init(privateKey, Cipher.MODE_DECRYPT);
 	}
 
 	// helper method that resets the security settings
@@ -67,7 +80,7 @@ public class Security extends BasicService implements SecurityService {
 							SecurityService.PROPERTY_OUTPUT_CONFIDENTIALITY);
 			return false; // allow other Services to preprocess if needed
 		}
-		if (key == null || !key.isInitialized()) {
+		if (decryptCipher == null) { // not initialized
 			return false;
 		}
 
@@ -83,7 +96,7 @@ public class Security extends BasicService implements SecurityService {
 		if (lc % BLOCK_SIZE != 0)
 			CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
 		byte[] deciphertext = getTransientArray(lc);
-		cipher.doFinal(buffer, ISO7816.OFFSET_CDATA, lc, deciphertext,
+		decryptCipher.doFinal(buffer, ISO7816.OFFSET_CDATA, lc, deciphertext,
 				(short) 0);
 		byte numPadding = deciphertext[(short) (lc - 1)];
 		byte unpaddedLength = (byte) (lc - numPadding);
@@ -107,7 +120,7 @@ public class Security extends BasicService implements SecurityService {
 	public boolean processDataOut(APDU apdu) {
 		if (selectingApplet())
 			return false; //allow other Services to postprocess if needed
-		if (key == null || !key.isInitialized()) {
+		if (decryptCipher == null) {
 			return false;
 		}
 
@@ -131,7 +144,7 @@ public class Security extends BasicService implements SecurityService {
 		if ((short) (OFFSET_OUT_RDATA - 1 + paddedLength) > buffer.length)
 			// outgoing buffer can not accommodate the padding
 			CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
-		cipher.doFinal(padded, (short) 0, paddedLength, buffer, OFFSET_OUT_RDATA);
+		decryptCipher.doFinal(padded, (short) 0, paddedLength, buffer, OFFSET_OUT_RDATA);
 		buffer[OFFSET_OUT_LA] = (byte) paddedLength;
 		return true; // don't allow any other postprocessing
 	}

@@ -6,6 +6,7 @@ import javacard.framework.UserException;
 import nz.ac.aut.hss.card.client.RemoteObject;
 
 import java.rmi.RemoteException;
+import java.security.PublicKey;
 
 /**
  * A simple Java Card host application that demonstrates a JCRMI host
@@ -24,7 +25,8 @@ import java.rmi.RemoteException;
 public class SecureHost {
 	public static void main(String[] args) {
 		SecureAccessor accessor = null;
-		try {  // connect to the CAD specified in file jcclient.properties
+		try {
+			// connect to the CAD specified in file jcclient.properties
 			// using a secure card accessor
 			accessor = new SecureAccessor(new ApduIOCardAccessor());
 			JCRMIConnect jcRMI = new JCRMIConnect(accessor);
@@ -37,6 +39,22 @@ public class SecureHost {
 			RemoteObject remote = (RemoteObject) jcRMI.getInitialReference();
 			System.out.println("Got remote object");
 
+			// public key
+			System.out.println("Retrieving public key");
+			byte[] publicKeyBytes = remote.getPublicKeyBytes();
+			final PublicKey publicKey = KeyUtil.toKey(publicKeyBytes);
+			System.out.println(publicKey);
+			accessor.setPublicKey(publicKey);
+			System.out.println("Using asymmetric encryption");
+			remote.useAsymmetricEncryption();
+
+			// session key
+//			System.out.println("Generating session key");
+//			SecretKey secretKey = KeyUtil.generateAESKey(KeySpec.SESSION_KEY_LENGTH);
+//			System.out.println("Setting session key on remote");
+//			remote.setSecretKey(secretKey.getEncoded());
+//			System.out.println("Session key set");
+
 			// PIN
 			final byte[] incorrectPinBytes = {0x01, 0x02, 0x03, 0x04};
 			enterPin(remote, incorrectPinBytes, "incorrect");
@@ -45,18 +63,6 @@ public class SecureHost {
 			enterPin(remote, pinBytes, "correct");
 
 			System.out.println();
-
-			// public key
-//			System.out.println("Retrieving public key");
-//			byte[] publicKeyBytes = remote.getPublicKeyBytes();
-//			print("Public key", publicKeyBytes);
-//			final RSAPublicKey publicKey = KeyUtil.toKey(publicKeyBytes);
-//			System.out.println(publicKey);
-//			accessor.setPublicKey(publicKeyBytes);
-
-			// session key
-//			AESKey secretKey = generateSecretKey();
-//			remote.setSecretKey(secretKey);
 
 			// get details
 			byte[] name = remote.getName();
