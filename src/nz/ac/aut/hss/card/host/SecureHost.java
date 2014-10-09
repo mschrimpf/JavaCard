@@ -1,8 +1,8 @@
 package nz.ac.aut.hss.card.host;
 
 import com.sun.javacard.clientlib.ApduIOCardAccessor;
-import com.sun.javacard.clientlib.CardAccessor;
 import com.sun.javacard.rmiclientlib.JCRMIConnect;
+import javacard.framework.UserException;
 import nz.ac.aut.hss.card.client.RemoteObject;
 
 import java.rmi.RemoteException;
@@ -23,11 +23,11 @@ import java.rmi.RemoteException;
  */
 public class SecureHost {
 	public static void main(String[] args) {
-		CardAccessor ca = null;
+		SecureAccessor accessor = null;
 		try {  // connect to the CAD specified in file jcclient.properties
 			// using a secure card accessor
-			ca = new SecureAccessor(new ApduIOCardAccessor());
-			JCRMIConnect jcRMI = new JCRMIConnect(ca);
+			accessor = new SecureAccessor(new ApduIOCardAccessor());
+			JCRMIConnect jcRMI = new JCRMIConnect(accessor);
 			// select the RMIDemoApplet
 			System.out.println("Selecting secure applet");
 			byte[] appletAID = {0x10, 0x20, 0x30, 0x40, 0x50, 0x05};
@@ -38,41 +38,54 @@ public class SecureHost {
 			System.out.println("Got remote object");
 
 			// PIN
-			short pinTriesRemaining;
 			final byte[] incorrectPinBytes = {0x01, 0x02, 0x03, 0x04};
-			printPin("incorrect", incorrectPinBytes);
-			pinTriesRemaining = remoteProxy.checkPIN(incorrectPinBytes);
-			System.out.println("PIN is " +
-					(pinTriesRemaining == -1 ? "correct" : "incorrect - " + pinTriesRemaining + " attempts remaining"));
-
+			enterPin(remoteProxy, incorrectPinBytes, "incorrect");
 
 			final byte[] pinBytes = {0x04, 0x03, 0x02, 0x01};
-			printPin("correct", pinBytes);
-			pinTriesRemaining = remoteProxy.checkPIN(pinBytes);
-			System.out.println("PIN is " +
-					(pinTriesRemaining == -1 ? "correct" : "incorrect - " + pinTriesRemaining + " attempts remaining"));
+			enterPin(remoteProxy, pinBytes, "correct");
 
-//			// public key
+			// public key
 //			System.out.println("Retrieving public key");
-//			PublicKey publicKey = remoteProxy.getPublicKey();
-//			System.out.println("Public key is: " + publicKey);
+//			byte[] publicKeyBytes = remoteProxy.getPublicKeyBytes();
+//			print("Public key", publicKeyBytes);
+//			final RSAPublicKey publicKey = KeyUtil.toKey(publicKeyBytes);
+//			System.out.println(publicKey);
+//			accessor.setPublicKey(publicKeyBytes);
 
-//			System.out.println("Getting public key");
-//			RemoteObject remoteProxy = (RemoteObject) jcRMI.getInitialReference();
-//			PublicKey cardPublicKey = remoteProxy.getPublicKey();
+			// session key
 //			AESKey secretKey = generateSecretKey();
 //			remoteProxy.setSecretKey(secretKey);
+
+			// get details
+
 		} catch (RemoteException e) {
 			System.err.println("Remote Exception: " + e);
 		} catch (Exception e) {
 			System.err.println("Exception from applet: " + e);
 		} finally {
 			try {
-				if (ca != null) ca.closeCard();
+				if (accessor != null) accessor.closeCard();
 			} catch (Exception e) {
 				System.err.println("Unable to close card");
 			}
 		}
+	}
+
+	private static void print(final String description, final byte[] bytes) {
+		System.out.print(description + ":");
+		for (int i = 0; i < bytes.length; i++) {
+			System.out.printf(" [%d] 0x%02X", i, bytes[i]);
+		}
+		System.out.println();
+	}
+
+	private static void enterPin(final RemoteObject remoteProxy, final byte[] pinBytes, String label)
+			throws RemoteException, UserException {
+		final short pinTriesRemaining;
+		printPin(label, pinBytes);
+		pinTriesRemaining = remoteProxy.checkPIN(pinBytes);
+		System.out.println("PIN is " +
+				(pinTriesRemaining == -1 ? "correct" : "incorrect - " + pinTriesRemaining + " attempts remaining"));
 	}
 
 	private static void printPin(final String pinDescription, final byte[] pinBytes) {

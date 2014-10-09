@@ -17,7 +17,9 @@ package nz.ac.aut.hss.card.client;
 import javacard.framework.*;
 import javacard.framework.service.Dispatcher;
 import javacard.framework.service.RMIService;
-import javacard.security.PublicKey;
+import javacard.security.KeyPair;
+import javacard.security.RSAPrivateKey;
+import javacard.security.RSAPublicKey;
 
 
 /**
@@ -33,15 +35,23 @@ public class SecureApplet extends Applet {
 
 	private final Dispatcher dispatcher;
 	private OwnerPIN pin;
+	private final RSAPrivateKey privateKey;
 
 	protected SecureApplet() {
 		super();
 
 		// create a SecurityService to handle encryption of APDU
-		Security security = new Security();
+		final Security security = new Security();
+
+		// create key pair
+		final KeyPair keyPair = KeyUtil.createRSAPair();
+		this.privateKey = (RSAPrivateKey) keyPair.getPrivate();
+		final RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
+		final byte[] publicKeyBytes = KeyUtil.toBytes(publicKey);
+
 		// create the remote object
-		final PublicKey publicKey = null;
-		final RemoteObject remoteObject = new RemoteObjectImpl(security, publicKey, this);
+		final RemoteObject remoteObject = new RemoteObjectImpl(security, publicKeyBytes, this);
+
 		// allocate an RMI service and dispatcher to process commands
 		dispatcher = new Dispatcher((short) 3); // three services added
 		dispatcher.addService(security, Dispatcher.PROCESS_INPUT_DATA); // preprocess command APDU

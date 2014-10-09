@@ -125,8 +125,7 @@ public class Security extends BasicService implements SecurityService {
 		if ((short) (OFFSET_OUT_RDATA - 1 + paddedLength) > buffer.length)
 			// outgoing buffer can not accommodate the padding
 			CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
-		cipher.doFinal(padded, (short) 0, (short) paddedLength, buffer,
-				OFFSET_OUT_RDATA);
+		cipher.doFinal(padded, (short) 0, paddedLength, buffer, OFFSET_OUT_RDATA);
 		buffer[OFFSET_OUT_LA] = (byte) paddedLength;
 		return true; // don't allow any other postprocessing
 	}

@@ -6,7 +6,6 @@ import javacard.framework.UserException;
 import javacard.framework.service.CardRemoteObject;
 import javacard.framework.service.SecurityService;
 import javacard.security.AESKey;
-import javacard.security.PublicKey;
 
 import java.rmi.RemoteException;
 
@@ -20,12 +19,12 @@ public class RemoteObjectImpl implements RemoteObject {
 	private static final short REQUEST_DENIED = (short) 0x6003;
 
 	private final Security security;
-	private final PublicKey publicKey;
+	private final byte[] publicKeyBytes;
 	private final SecureApplet applet;
 
-	public RemoteObjectImpl(final Security security, final PublicKey publicKey, final SecureApplet applet) {
+	public RemoteObjectImpl(final Security security, final byte[] publicKeyBytes, final SecureApplet applet) {
 		this.security = security;
-		this.publicKey = publicKey;
+		this.publicKeyBytes = publicKeyBytes;
 		this.applet = applet;
 		CardRemoteObject.export(this); // export this remote object
 	}
@@ -39,16 +38,19 @@ public class RemoteObjectImpl implements RemoteObject {
 		final short triesRemaining = applet.getPINTriesRemaining();
 		if (triesRemaining < 1) {
 			// delete data if pin entered wrongly too many times
-			publicKey.clearKey();
-			security.clearKey();
+			clearData();
 		}
 		return triesRemaining;
 	}
 
-	// TODO might not be able to transfer arbitrary objects
-	public PublicKey getPublicKey() throws RemoteException, UserException {
-		assurePINAndConfidentiality();
-		return publicKey;
+	private void clearData() {
+		clearArray(publicKeyBytes);
+		security.clearKey();
+	}
+
+	public byte[] getPublicKeyBytes() throws RemoteException, UserException {
+		assurePIN();
+		return publicKeyBytes;
 	}
 
 	public void setSecretKey(final AESKey key) throws RemoteException, UserException {
@@ -57,10 +59,24 @@ public class RemoteObjectImpl implements RemoteObject {
 	}
 
 	private void assurePINAndConfidentiality() throws UserException {
-		if (!applet.isPINValidated())
-			ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
+		assurePIN();
+		assureConfidentiality();
+	}
+
+	private void assureConfidentiality() throws UserException {
 		if (!security.isCommandSecure
 				(SecurityService.PROPERTY_OUTPUT_CONFIDENTIALITY))
 			UserException.throwIt(REQUEST_DENIED);
+	}
+
+	private void assurePIN() {
+		if (!applet.isPINValidated())
+			ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
+	}
+
+	private void clearArray(byte[] array) {
+		for (short i = 0; i < array.length; i++) {
+			array[i] = 0;
+		}
 	}
 }
