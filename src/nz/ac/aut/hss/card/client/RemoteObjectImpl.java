@@ -124,6 +124,8 @@ public class RemoteObjectImpl implements RemoteObject {
 		if (!security.isCommandSecure
 				(SecurityService.PROPERTY_OUTPUT_CONFIDENTIALITY))
 			UserException.throwIt(REQUEST_DENIED);
+//		if(! security.isAuthenticated(SecurityService.PRINCIPAL_CARDHOLDER))
+//			UserException.throwIt(SW_VERIFICATION_FAILED);
 	}
 
 	private void assurePIN() {
