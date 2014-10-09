@@ -93,6 +93,11 @@ public class Security extends BasicService implements SecurityService {
 		buffer[(short) (ISO7816.OFFSET_LC + unpaddedLength + 1)] = le;
 		// reset the CLA security bits
 		buffer[ISO7816.OFFSET_CLA] &= ~CLA_SECURITY_BITS_MASK;
+
+		//check hash-code
+//		cardHolderAuthenticated = Authenticator.checkHash(buffer);
+//		apdu.setBufferDoesNotExist();
+
 		return true; // don't allow any other preprocessing
 	}
 
@@ -108,6 +113,7 @@ public class Security extends BasicService implements SecurityService {
 
 		// get outgoing APDU buffer (CLA,INS,SW1,SW2,Le,data field)
 		byte[] buffer = apdu.getBuffer();
+//		buffer = Authenticator.appendHash(buffer);
 		// encrypt the data field in response APDU
 		byte unpaddedLength = (byte) (buffer[OFFSET_OUT_LA] & 0xFF);
 		// pad the buffer segment to have blocks of length BLOCK_SIZE
