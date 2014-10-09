@@ -95,6 +95,10 @@ public class RemoteObjectImpl implements RemoteObject {
 	private void clearData() {
 		clearArray(publicKeyBytes);
 		security.clearKey();
+		clearArray(name);
+		clearArray(accNum);
+		clearArray(expiryDate);
+		clearArray(securityCode);
 	}
 
 	public byte[] getPublicKeyBytes() throws RemoteException, UserException {
