@@ -34,19 +34,21 @@ public class SecureHost {
 			jcRMI.selectApplet(appletAID, JCRMIConnect.REF_WITH_INTERFACE_NAMES);
 			// obtain a proxy stub
 			System.out.println("Getting proxy for remote object");
-			RemoteObject remoteProxy = (RemoteObject) jcRMI.getInitialReference();
+			RemoteObject remote = (RemoteObject) jcRMI.getInitialReference();
 			System.out.println("Got remote object");
 
 			// PIN
 			final byte[] incorrectPinBytes = {0x01, 0x02, 0x03, 0x04};
-			enterPin(remoteProxy, incorrectPinBytes, "incorrect");
+			enterPin(remote, incorrectPinBytes, "incorrect");
 
 			final byte[] pinBytes = {0x04, 0x03, 0x02, 0x01};
-			enterPin(remoteProxy, pinBytes, "correct");
+			enterPin(remote, pinBytes, "correct");
+
+			System.out.println();
 
 			// public key
 //			System.out.println("Retrieving public key");
-//			byte[] publicKeyBytes = remoteProxy.getPublicKeyBytes();
+//			byte[] publicKeyBytes = remote.getPublicKeyBytes();
 //			print("Public key", publicKeyBytes);
 //			final RSAPublicKey publicKey = KeyUtil.toKey(publicKeyBytes);
 //			System.out.println(publicKey);
@@ -54,10 +56,17 @@ public class SecureHost {
 
 			// session key
 //			AESKey secretKey = generateSecretKey();
-//			remoteProxy.setSecretKey(secretKey);
+//			remote.setSecretKey(secretKey);
 
 			// get details
-
+			byte[] name = remote.getName();
+			System.out.printf("%20s: %10s\n", "Account name", new String(name));
+			byte[] accountNumber = remote.getAccountNumber();
+			System.out.printf("%20s: %10s\n", "Account number", new String(accountNumber));
+			byte[] expiryDate = remote.getExpiryDate();
+			System.out.printf("%20s: %10s\n", "Expiry date", new String(expiryDate));
+			byte[] securityCode = remote.getSecurityCode();
+			System.out.printf("%20s: %10s\n", "Security code", new String(securityCode));
 		} catch (RemoteException e) {
 			System.err.println("Remote Exception: " + e);
 		} catch (Exception e) {

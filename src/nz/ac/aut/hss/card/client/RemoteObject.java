@@ -19,4 +19,14 @@ public interface RemoteObject extends Remote {
 	public byte[] getPublicKeyBytes() throws RemoteException, UserException;
 
 	public void setSecretKey(AESKey key) throws RemoteException, UserException;
+
+	// account details
+
+	public byte[] getName() throws RemoteException, UserException;
+
+	public byte[] getAccountNumber() throws RemoteException, UserException;
+
+	public byte[] getExpiryDate() throws RemoteException, UserException;
+
+	public byte[] getSecurityCode() throws RemoteException, UserException;
 }

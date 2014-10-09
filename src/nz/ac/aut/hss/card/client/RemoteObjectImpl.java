@@ -18,14 +18,57 @@ public class RemoteObjectImpl implements RemoteObject {
 	public final static short SW_VERIFICATION_FAILED = 0x6300;
 	private static final short REQUEST_DENIED = (short) 0x6003;
 
+	private final byte[] name, accNum, securityCode, expiryDate;
+
 	private final Security security;
 	private final byte[] publicKeyBytes;
 	private final SecureApplet applet;
 
 	public RemoteObjectImpl(final Security security, final byte[] publicKeyBytes, final SecureApplet applet) {
+		// references
 		this.security = security;
 		this.publicKeyBytes = publicKeyBytes;
 		this.applet = applet;
+
+		// account details
+		// put a NAME in a transient array
+		name = new byte[12];
+		name[0] = 0x5A;
+		name[1] = 0x6F;
+		name[2] = 0x65;
+		name[3] = 0x20;
+		name[4] = 0x57;
+		name[5] = 0x20;
+		name[6] = 0x57;
+		name[7] = 0x61;
+		name[8] = 0x72;
+		name[9] = 0x65;
+		name[10] = 0x6E;
+		name[11] = 0x61;
+
+		// put an ACCOUNT NUMBER in a transient array
+		accNum = new byte[6];
+		accNum[0] = 0x39;
+		accNum[1] = 0x38;
+		accNum[2] = 0x37;
+		accNum[3] = 0x36;
+		accNum[4] = 0x35;
+		accNum[5] = 0x34;
+
+		// put an EXPIRYDATE in a transient array
+		expiryDate = new byte[4];
+		expiryDate[0] = 0x30;
+		expiryDate[1] = 0x37;
+		expiryDate[2] = 0X31;
+		expiryDate[3] = 0x35;
+
+		// put a SECURITY CODE in a transient array
+		securityCode = new byte[3];
+		securityCode[0] = 0x37;
+		securityCode[1] = 0x37;
+		securityCode[2] = 0x37;
+
+		// export
 		CardRemoteObject.export(this); // export this remote object
 	}
 
@@ -78,5 +121,23 @@ public class RemoteObjectImpl implements RemoteObject {
 		for (short i = 0; i < array.length; i++) {
 			array[i] = 0;
 		}
+	}
+
+	// details
+
+	public byte[] getName() throws RemoteException, UserException {
+		return name;
+	}
+
+	public byte[] getAccountNumber() throws RemoteException, UserException {
+		return accNum;
+	}
+
+	public byte[] getExpiryDate() throws RemoteException, UserException {
+		return expiryDate;
+	}
+
+	public byte[] getSecurityCode() throws RemoteException, UserException {
+		return securityCode;
 	}
 }
