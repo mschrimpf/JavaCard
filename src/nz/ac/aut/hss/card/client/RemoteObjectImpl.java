@@ -4,8 +4,6 @@ import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
 import javacard.framework.UserException;
 import javacard.framework.service.CardRemoteObject;
-import javacard.framework.service.SecurityService;
-import javacard.security.CryptoException;
 
 import java.rmi.RemoteException;
 
@@ -26,31 +24,22 @@ public class RemoteObjectImpl implements RemoteObject {
 
 	public RemoteObjectImpl(final Security security, final byte[] publicKeyBytes, final SecureApplet applet) {
 		// references
-		if(security == null)
+		if (security == null)
 			ISOException.throwIt(ISO7816.SW_WRONG_DATA);
 		this.security = security;
-		if(publicKeyBytes == null)
+		if (publicKeyBytes == null)
 			ISOException.throwIt(ISO7816.SW_WRONG_DATA);
 		this.publicKeyBytes = publicKeyBytes;
-		if(applet == null)
+		if (applet == null)
 			ISOException.throwIt(ISO7816.SW_WRONG_DATA);
 		this.applet = applet;
 
 		// account details
 		// put a NAME in a transient array
-		name = new byte[12];
+		name = new byte[3];
 		name[0] = 0x5A;
 		name[1] = 0x6F;
 		name[2] = 0x65;
-		name[3] = 0x20;
-		name[4] = 0x57;
-		name[5] = 0x20;
-		name[6] = 0x57;
-		name[7] = 0x61;
-		name[8] = 0x72;
-		name[9] = 0x65;
-		name[10] = 0x6E;
-		name[11] = 0x61;
 
 		// put an ACCOUNT NUMBER in a transient array
 		accNum = new byte[6];
@@ -110,27 +99,13 @@ public class RemoteObjectImpl implements RemoteObject {
 	}
 
 	public void setSecretKey(final byte[] keyBytes) throws RemoteException, UserException {
-		if(keyBytes.length != KeySpec.SESSION_KEY_LENGTH)
-			CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
-		security.setKey(keyBytes);
-	}
-
-	private void assurePINAndConfidentiality() throws UserException {
 		assurePIN();
-		assureConfidentiality();
+		security.setSessionKey(keyBytes);
 	}
 
-	private void assureConfidentiality() throws UserException {
-		if (!security.isCommandSecure
-				(SecurityService.PROPERTY_OUTPUT_CONFIDENTIALITY))
-			UserException.throwIt(REQUEST_DENIED);
-//		if(! security.isAuthenticated(SecurityService.PRINCIPAL_CARDHOLDER))
-//			UserException.throwIt(SW_VERIFICATION_FAILED);
-	}
-
-	private void assurePIN() {
-		if (!applet.isPINValidated())
-			ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
+	public void useSymmetricEncryption() throws RemoteException, UserException {
+		assurePIN();
+		security.useSymmetric();
 	}
 
 	private void clearArray(byte[] array) {
@@ -159,5 +134,25 @@ public class RemoteObjectImpl implements RemoteObject {
 	public byte[] getSecurityCode() throws RemoteException, UserException {
 		assurePINAndConfidentiality();
 		return securityCode;
+	}
+
+	// security
+
+	private void assurePINAndConfidentiality() throws UserException {
+		assurePIN();
+		assureConfidentiality();
+	}
+
+	private void assureConfidentiality() throws UserException {
+//		if (!security.isCommandSecure
+//				(SecurityService.PROPERTY_OUTPUT_CONFIDENTIALITY))
+//			UserException.throwIt(REQUEST_DENIED);
+//		if(! security.isAuthenticated(SecurityService.PRINCIPAL_CARDHOLDER))
+//			UserException.throwIt(SW_VERIFICATION_FAILED);
+	}
+
+	private void assurePIN() {
+//		if (!applet.isPINValidated())
+//			ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
 	}
 }

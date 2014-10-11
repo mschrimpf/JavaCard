@@ -18,6 +18,9 @@ import javacard.security.RSAPrivateKey;
 import javacardx.crypto.Cipher;
 
 public class Security extends BasicService implements SecurityService {
+	private static final short ENCRYPT_NONE = 0, ENCRYPT_ASYMMETRIC = 1, ENCRYPT_SYMMETRIC = 2;
+	private short mode;
+
 	private boolean appProviderAuthenticated, cardIssuerAuthenticated,
 			cardHolderAuthenticated;
 	private byte sessionProperties; // bits give session secure props
@@ -34,26 +37,40 @@ public class Security extends BasicService implements SecurityService {
 
 	public Security(final RSAPrivateKey privateKey) {
 		super();
-		if(privateKey == null)
+		if (privateKey == null)
 			CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
 		this.privateKey = privateKey;
 		resetSecuritySettings();
 		// create a transient array of initial length 10 bytes
 		tempTransientArray = JCSystem.makeTransientByteArray((short) 10, JCSystem.CLEAR_ON_DESELECT);
-		key = (AESKey) KeyBuilder.buildKey(KeyBuilder.TYPE_AES, KeySpec.SESSION_KEY_LENGTH, false);
+		key = (AESKey) KeyBuilder.buildKey(KeyBuilder.TYPE_AES, KeySpec.SESSION_KEY_LENGTH_BITS, false);
+		encryptCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
+		decryptCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
+		mode = ENCRYPT_NONE;
+
+
+		setSessionKey(new byte[]{103, -125, -92, 79, -126, -49, 48, -84, -85, 113,
+				-13, 41, -58, -106, -17, 31});
+		useSymmetric();
 	}
 
-	public void setKey(final byte[] keyBytes) {
+	public void setSessionKey(final byte[] keyBytes) throws CryptoException {
+		if (keyBytes.length != KeySpec.SESSION_KEY_LENGTH_BITS / 8)
+			CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
+		if (key.isInitialized()) // already initialized
+			CryptoException.throwIt(CryptoException.UNINITIALIZED_KEY);
+
 		key.setKey(keyBytes, (short) 0);
-//		encryptCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
-//		encryptCipher.init(key, Cipher.MODE_ENCRYPT, KeySpec.SESSION_IV_BYTES, (short) 0, (short) KeySpec.SESSION_IV_BYTES.length);
-//		decryptCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
-//		decryptCipher.init(key, Cipher.MODE_DECRYPT, KeySpec.SESSION_IV_BYTES, (short) 0, (short) KeySpec.SESSION_IV_BYTES.length);
+	}
+
+	public void useSymmetric() {
+		mode = ENCRYPT_SYMMETRIC;
 	}
 
 	public void usePrivateKey() {
 		decryptCipher = Cipher.getInstance(Cipher.ALG_RSA_PKCS1, false);
 		decryptCipher.init(privateKey, Cipher.MODE_DECRYPT);
+		mode = ENCRYPT_ASYMMETRIC;
 	}
 
 	// helper method that resets the security settings
@@ -63,6 +80,44 @@ public class Security extends BasicService implements SecurityService {
 		cardHolderAuthenticated = false;
 		sessionProperties = 0;
 		commandProperties = 0;
+	}
+
+	// overridden method of BasicService that performs encryption
+	// returns true if no more postprocessing should be performed
+	// by any other Service that has been added to handles the APDU
+	public boolean processDataOut(APDU apdu) {
+		if (selectingApplet())
+			return false; //allow other Services to postprocess if needed
+		if (mode == ENCRYPT_NONE) {
+			return false;
+		}
+
+
+		// get outgoing APDU buffer (CLA,INS,SW1,SW2,Le,data field)
+		byte[] buffer = apdu.getBuffer();
+
+		// encrypt the data field in response APDU
+		byte unpaddedLength = (byte) (buffer[OFFSET_OUT_LA] & 0xFF);
+		// pad the buffer segment to have blocks of length BLOCK_SIZE
+		// bytes as per PKCS#5 padding scheme where the padding bytes
+		// always each give the number of padded bytes
+		short numBlocks = (short) ((short) (unpaddedLength + BLOCK_SIZE)
+				/ BLOCK_SIZE);
+		short paddedLength = (short) (numBlocks * BLOCK_SIZE);
+		byte[] padded = getTransientArray(paddedLength);
+		Util.arrayCopyNonAtomic(buffer, OFFSET_OUT_RDATA, padded, (short) 0, unpaddedLength);
+		byte numPadding = (byte) (paddedLength - unpaddedLength);
+		for (short i = unpaddedLength; i < paddedLength; i++)
+			padded[i] = numPadding;
+		if ((short) (OFFSET_OUT_RDATA - 1 + paddedLength) >
+				buffer.length) { // outgoing buffer can not accommodate the padding
+			CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
+		}
+		encryptCipher.init(key, Cipher.MODE_ENCRYPT, KeySpec.SESSION_IV_BYTES, (short) 0,
+				(short) KeySpec.SESSION_IV_BYTES.length);
+		encryptCipher.doFinal(padded, (short) 0, paddedLength, buffer, OFFSET_OUT_RDATA);
+		buffer[OFFSET_OUT_LA] = (byte) paddedLength;
+		return true; // don't allow any other postprocessing
 	}
 
 	// overridden method of BasicService that performs decryption
@@ -80,7 +135,7 @@ public class Security extends BasicService implements SecurityService {
 							SecurityService.PROPERTY_OUTPUT_CONFIDENTIALITY);
 			return false; // allow other Services to preprocess if needed
 		}
-		if (decryptCipher == null) { // not initialized
+		if (mode == ENCRYPT_NONE) { // not initialized
 			return false;
 		}
 
@@ -96,6 +151,8 @@ public class Security extends BasicService implements SecurityService {
 		if (lc % BLOCK_SIZE != 0)
 			CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
 		byte[] deciphertext = getTransientArray(lc);
+		decryptCipher.init(key, Cipher.MODE_DECRYPT, KeySpec.SESSION_IV_BYTES, (short) 0,
+				(short) KeySpec.SESSION_IV_BYTES.length);
 		decryptCipher.doFinal(buffer, ISO7816.OFFSET_CDATA, lc, deciphertext,
 				(short) 0);
 		byte numPadding = deciphertext[(short) (lc - 1)];
@@ -112,41 +169,6 @@ public class Security extends BasicService implements SecurityService {
 //		apdu.setBufferDoesNotExist();
 
 		return true; // don't allow any other preprocessing
-	}
-
-	// overridden method of BasicService that performs encryption
-	// returns true if no more postprocessing should be performed
-	// by any other Service that has been added to handles the APDU
-	public boolean processDataOut(APDU apdu) {
-		if (selectingApplet())
-			return false; //allow other Services to postprocess if needed
-		if (decryptCipher == null) {
-			return false;
-		}
-
-		// get outgoing APDU buffer (CLA,INS,SW1,SW2,Le,data field)
-		byte[] buffer = apdu.getBuffer();
-//		buffer = Authenticator.appendHash(buffer);
-		// encrypt the data field in response APDU
-		byte unpaddedLength = (byte) (buffer[OFFSET_OUT_LA] & 0xFF);
-		// pad the buffer segment to have blocks of length BLOCK_SIZE
-		// bytes as per PKCS#5 padding scheme where the padding bytes
-		// always each give the number of padded bytes
-		short numBlocks = (short) ((short) (unpaddedLength + BLOCK_SIZE)
-				/ BLOCK_SIZE);
-		short paddedLength = (short) (numBlocks * BLOCK_SIZE);
-		byte[] padded = getTransientArray(paddedLength);
-		Util.arrayCopyNonAtomic(buffer, OFFSET_OUT_RDATA, padded,
-				(short) 0, unpaddedLength);
-		byte numPadding = (byte) (paddedLength - unpaddedLength);
-		for (short i = unpaddedLength; i < paddedLength; i++)
-			padded[i] = numPadding;
-		if ((short) (OFFSET_OUT_RDATA - 1 + paddedLength) > buffer.length)
-			// outgoing buffer can not accommodate the padding
-			CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
-		decryptCipher.doFinal(padded, (short) 0, paddedLength, buffer, OFFSET_OUT_RDATA);
-		buffer[OFFSET_OUT_LA] = (byte) paddedLength;
-		return true; // don't allow any other postprocessing
 	}
 
 	// returns whether specified principal (APP_PROVIDER, CARD_ISSUER,

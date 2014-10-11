@@ -3,10 +3,11 @@ package nz.ac.aut.hss.card.host;
 import com.sun.javacard.clientlib.ApduIOCardAccessor;
 import com.sun.javacard.rmiclientlib.JCRMIConnect;
 import javacard.framework.UserException;
+import nz.ac.aut.hss.card.client.KeySpec;
 import nz.ac.aut.hss.card.client.RemoteObject;
 
+import javax.crypto.SecretKey;
 import java.rmi.RemoteException;
-import java.security.PublicKey;
 
 /**
  * A simple Java Card host application that demonstrates a JCRMI host
@@ -40,31 +41,39 @@ public class SecureHost {
 			System.out.println("Got remote object");
 
 			// public key
-			System.out.println("Retrieving public key");
-			byte[] publicKeyBytes = remote.getPublicKeyBytes();
-			final PublicKey publicKey = KeyUtil.toKey(publicKeyBytes);
-			System.out.println(publicKey);
-			accessor.setPublicKey(publicKey);
-			System.out.println("Using asymmetric encryption");
-			remote.useAsymmetricEncryption();
+//			System.out.println("Retrieving public key");
+//			byte[] publicKeyBytes = remote.getPublicKeyBytes();
+//			final PublicKey publicKey = KeyUtil.toKey(publicKeyBytes);
+//			System.out.println(publicKey);
+//			System.out.println("Using asymmetric encryption");
+//			remote.useAsymmetricEncryption();
+//			accessor.setPublicKey(publicKey);
+//			System.out.println("OK");
 
 			// session key
-//			System.out.println("Generating session key");
-//			SecretKey secretKey = KeyUtil.generateAESKey(KeySpec.SESSION_KEY_LENGTH);
+			System.out.println("Generating session key");
+			SecretKey secretKey = KeyUtil.generateAESKey(KeySpec.SESSION_KEY_LENGTH_BITS);
 //			System.out.println("Setting session key on remote");
 //			remote.setSecretKey(secretKey.getEncoded());
-//			System.out.println("Session key set");
-
-			// PIN
-			final byte[] incorrectPinBytes = {0x01, 0x02, 0x03, 0x04};
-			enterPin(remote, incorrectPinBytes, "incorrect");
-
-			final byte[] pinBytes = {0x04, 0x03, 0x02, 0x01};
-			enterPin(remote, pinBytes, "correct");
+//			Thread.sleep(1000);
+//			System.out.println("Using symmetric encryption");
+//			remote.useSymmetricEncryption();
+			accessor.setSessionKey(secretKey);
+			System.out.println("OK");
 
 			System.out.println();
 
+			// PIN
+//			final byte[] incorrectPinBytes = {0x01, 0x02, 0x03, 0x04};
+//			enterPin(remote, incorrectPinBytes, "incorrect");
+//
+//			final byte[] pinBytes = {0x04, 0x03, 0x02, 0x01};
+//			enterPin(remote, pinBytes, "correct");
+//
+//			System.out.println();
+
 			// get details
+			System.out.println("Retrieving details");
 			byte[] name = remote.getName();
 			System.out.printf("%20s: %10s\n", "Account name", new String(name));
 			byte[] accountNumber = remote.getAccountNumber();
@@ -75,8 +84,10 @@ public class SecureHost {
 			System.out.printf("%20s: %10s\n", "Security code", new String(securityCode));
 		} catch (RemoteException e) {
 			System.err.println("Remote Exception: " + e);
+			e.printStackTrace();
 		} catch (Exception e) {
 			System.err.println("Exception from applet: " + e);
+			e.printStackTrace();
 		} finally {
 			try {
 				if (accessor != null) accessor.closeCard();

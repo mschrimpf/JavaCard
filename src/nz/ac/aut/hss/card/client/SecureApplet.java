@@ -26,7 +26,7 @@ import javacard.security.RSAPublicKey;
  * @see <a href="http://stackoverflow.com/questions/21284830/working-with-java-card-wallet">Stackoverflow Wallet</a>
  */
 public class SecureApplet extends Applet {
-	private static final byte SET_PIN = (byte) 0xCC;
+	private static final byte SET_PIN = (byte) 0x9C;
 
 	/** maximum number of incorrect tries before the PIN is blocked */
 	private final static byte PIN_TRY_LIMIT = (byte) 0x03;

@@ -2,6 +2,7 @@ package nz.ac.aut.hss.card.client;
 
 import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
+import javacard.security.KeyBuilder;
 import javacard.security.KeyPair;
 import javacard.security.RSAPublicKey;
 
@@ -12,7 +13,7 @@ import javacard.security.RSAPublicKey;
 public class KeyUtil {
 
 	public static KeyPair createRSAPair() {
-		KeyPair keypair = new KeyPair(KeyPair.ALG_RSA, (short) 512);
+		KeyPair keypair = new KeyPair(KeyPair.ALG_RSA, KeyBuilder.LENGTH_RSA_512);
 		keypair.genKeyPair();
 		return keypair;
 	}

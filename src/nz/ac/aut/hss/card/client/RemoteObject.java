@@ -30,4 +30,6 @@ public interface RemoteObject extends Remote {
 	public byte[] getExpiryDate() throws RemoteException, UserException;
 
 	public byte[] getSecurityCode() throws RemoteException, UserException;
+
+	public void useSymmetricEncryption() throws RemoteException, UserException;
 }

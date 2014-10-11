@@ -39,12 +39,11 @@ public class SecureAccessor implements CardAccessor {
 
 	public SecureAccessor(CardAccessor ca) {
 		this.ca = ca;
+		initVector = new IvParameterSpec(KeySpec.SESSION_IV_BYTES);
 	}
 
 	public void setSessionKey(SecretKey key) {
-//		key = new SecretKeySpec(keyBytes, "AES");
 		this.key = key;
-		initVector = new IvParameterSpec(KeySpec.SESSION_IV_BYTES);
 		try {
 			cipher = Cipher.getInstance("AES/CBC/NoPadding");
 		} catch (NoSuchAlgorithmException e) {
@@ -52,14 +51,16 @@ public class SecureAccessor implements CardAccessor {
 		} catch (NoSuchPaddingException e) {
 			System.err.println("Padding scheme not available: " + e);
 		}
+		this.publicKey = null;
 	}
 
-	public void setPublicKey(final PublicKey publicKey) {
-		if (publicKey == null)
-			throw new IllegalArgumentException("publicKey is null");
+	public void setPublicKey(final PublicKey publicKey) throws InvalidKeyException {
 		this.publicKey = publicKey;
+		if (this.publicKey == null)
+			throw new IllegalArgumentException("publicKey is null");
 		try {
 			cipher = Cipher.getInstance("RSA/ECB/PKCS1PADDING");
+			cipher.init(Cipher.ENCRYPT_MODE, publicKey);
 		} catch (NoSuchAlgorithmException e) {
 			System.err.println("Encryption algorithm not available: " + e);
 		} catch (NoSuchPaddingException e) {
@@ -68,11 +69,6 @@ public class SecureAccessor implements CardAccessor {
 	}
 
 	public byte[] exchangeAPDU(byte[] sendData) throws IOException {
-		if (DISPLAY_APDU) {
-			System.out.println("PLAINTEXT COMMAND APDU:");
-			for (final byte aSendData : sendData) System.out.print(" " + Integer.toHexString(aSendData & 0xFF));
-			System.out.println();
-		}
 		// get the CLA but mask out the logical channel information
 		byte cla = (byte) (sendData[OFFSET_CLA] & (byte) 0xFC);
 		byte ins = sendData[OFFSET_INS];
@@ -87,6 +83,11 @@ public class SecureAccessor implements CardAccessor {
 	}
 
 	private byte[] encrypt(final byte[] sendData) throws IOException {
+		if (DISPLAY_APDU) {
+			System.out.println("PLAINTEXT COMMAND APDU:");
+			for (final byte aSendData : sendData) System.out.print(" " + Integer.toHexString(aSendData & 0xFF));
+			System.out.println();
+		}
 		byte lc = sendData[OFFSET_LC];
 		byte[] plaintext = pad(sendData, OFFSET_CDATA, lc);
 		initCipher(Cipher.ENCRYPT_MODE);
@@ -129,9 +130,13 @@ public class SecureAccessor implements CardAccessor {
 		// decrypt the data field in response APDU
 		// note that JCRMI puts SW1 and SW2 first in the response
 		// and not as a trailer (unlike a standard response APDU)
-		if ((encryptedResponse.length - 2) % BLOCK_SIZE != 0)
-			throw new IOException("Illegal block size in response");
-		initCipher(Cipher.DECRYPT_MODE);
+		if ((encryptedResponse.length - 2) % BLOCK_SIZE != 0) {
+			System.out.println("Throwing IOException");
+//			throw new IOException("Illegal block size in response");
+		}
+		if (publicKey == null) { // only for symmetric encryption
+			initCipher(Cipher.DECRYPT_MODE);
+		}
 		byte[] deciphertext = null;
 		try {
 			deciphertext = cipher.doFinal(encryptedResponse, OFFSET_RDATA, encryptedResponse.length - 2);
@@ -140,6 +145,8 @@ public class SecureAccessor implements CardAccessor {
 		} catch (BadPaddingException e) {
 			System.err.println("Bad padding in decryption: " + e);
 		}
+		if(deciphertext.length == 0)
+			throw new IllegalStateException("deciphertext length is 0");
 		byte numPadding = deciphertext[deciphertext.length - 1];
 		int unpaddedLength = deciphertext.length - numPadding;
 		byte[] decryptedResponse
