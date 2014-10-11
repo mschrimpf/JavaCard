@@ -2,14 +2,13 @@ package nz.ac.aut.hss.card.host;
 
 import com.sun.javacard.clientlib.CardAccessor;
 import nz.ac.aut.hss.card.client.KeySpec;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import java.io.IOException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
+import java.security.*;
+import java.security.interfaces.RSAPublicKey;
 
 /**
  * A CardAccessor that handles encryption and decryption of APDU that
@@ -19,8 +18,15 @@ import java.security.PublicKey;
  * @see nz.ac.aut.hss.card.host.SecureHost
  */
 public class SecureAccessor implements CardAccessor {
+	static {
+		Security.addProvider(new BouncyCastleProvider());
+	}
+
+	private static final String RSA_ALGORITHM = "RSA/NONE/PKCS1Padding";
+	private static final String AES_ALGORITHM = "AES/CBC/NoPadding";
+
 	private CardAccessor ca;
-	private SecretKey key;
+	private SecretKey sessionKey;
 	private IvParameterSpec initVector;
 	private Cipher cipher; // AES cipher in CBC mode with no padding
 	private static final byte BLOCK_SIZE = 16; // 16 byte cipher blocks
@@ -43,9 +49,9 @@ public class SecureAccessor implements CardAccessor {
 	}
 
 	public void setSessionKey(SecretKey key) {
-		this.key = key;
+		this.sessionKey = key;
 		try {
-			cipher = Cipher.getInstance("AES/CBC/NoPadding");
+			cipher = Cipher.getInstance(AES_ALGORITHM);
 		} catch (NoSuchAlgorithmException e) {
 			System.err.println("Encryption algorithm not available: " + e);
 		} catch (NoSuchPaddingException e) {
@@ -55,17 +61,17 @@ public class SecureAccessor implements CardAccessor {
 	}
 
 	public void setPublicKey(final PublicKey publicKey) throws InvalidKeyException {
-		this.publicKey = publicKey;
-		if (this.publicKey == null)
+		if (publicKey == null)
 			throw new IllegalArgumentException("publicKey is null");
+		this.publicKey = publicKey;
 		try {
-			cipher = Cipher.getInstance("RSA/ECB/PKCS1PADDING");
-			cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+			cipher = Cipher.getInstance(RSA_ALGORITHM);
 		} catch (NoSuchAlgorithmException e) {
 			System.err.println("Encryption algorithm not available: " + e);
 		} catch (NoSuchPaddingException e) {
 			System.err.println("Padding scheme not available: " + e);
 		}
+		this.sessionKey = null;
 	}
 
 	public byte[] exchangeAPDU(byte[] sendData) throws IOException {
@@ -91,13 +97,22 @@ public class SecureAccessor implements CardAccessor {
 		byte lc = sendData[OFFSET_LC];
 		byte[] plaintext = pad(sendData, OFFSET_CDATA, lc);
 		initCipher(Cipher.ENCRYPT_MODE);
-		byte[] ciphertext = null;
+		byte[] ciphertext;
 		try {
+			if (publicKey != null) {
+				final int plaintextBitLength = plaintext.length * 8;
+				final int keySize = ((RSAPublicKey) publicKey).getModulus().bitLength();
+				if (plaintextBitLength < keySize) {
+//					throw new IllegalArgumentException(
+					System.err.println(
+							"Data is too big (" + plaintextBitLength + " bits > " + keySize + ")");
+				}
+			}
 			ciphertext = cipher.doFinal(plaintext);
 		} catch (IllegalBlockSizeException e) {
-			System.err.println("Illegal padding in encryption: " + e);
+			throw new IOException("Illegal padding in encryption", e);
 		} catch (BadPaddingException e) {
-			System.err.println("Bad padding in encryption: " + e);
+			throw new IOException("Bad padding in encryption", e);
 		}
 		if (ciphertext.length > 255)
 			throw new IOException("Command APDU too long");
@@ -131,8 +146,7 @@ public class SecureAccessor implements CardAccessor {
 		// note that JCRMI puts SW1 and SW2 first in the response
 		// and not as a trailer (unlike a standard response APDU)
 		if ((encryptedResponse.length - 2) % BLOCK_SIZE != 0) {
-			System.out.println("Throwing IOException");
-//			throw new IOException("Illegal block size in response");
+			throw new IOException("Illegal block size in response");
 		}
 		if (publicKey == null) { // only for symmetric encryption
 			initCipher(Cipher.DECRYPT_MODE);
@@ -145,7 +159,7 @@ public class SecureAccessor implements CardAccessor {
 		} catch (BadPaddingException e) {
 			System.err.println("Bad padding in decryption: " + e);
 		}
-		if(deciphertext.length == 0)
+		if (deciphertext.length == 0)
 			throw new IllegalStateException("deciphertext length is 0");
 		byte numPadding = deciphertext[deciphertext.length - 1];
 		int unpaddedLength = deciphertext.length - numPadding;
@@ -167,7 +181,11 @@ public class SecureAccessor implements CardAccessor {
 
 	private void initCipher(final int mode) {
 		try {
-			cipher.init(mode, key, initVector);
+			if (publicKey != null) {
+				cipher.init(mode, publicKey);
+			} else {
+				cipher.init(mode, sessionKey, initVector);
+			}
 		} catch (InvalidKeyException e) {
 			System.err.println("Invalid key for en-/decryption: " + e);
 		} catch (InvalidAlgorithmParameterException e) {

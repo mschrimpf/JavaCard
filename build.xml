@@ -18,6 +18,7 @@
 
 	<property name="base.package" value="nz.ac.aut.hss.card"/>
 	<property name="base.sourcedir" value="src"/>
+	<property name="base.lib" value="lib/bcprov-jdk15on-151.jar"/>
 
 	<property name="applet.name" value="SecureApplet"/>
 	<property name="applet.sourcedir" value="${base.sourcedir}"/>
@@ -115,6 +116,7 @@
 		<pathelement path="${basedir}"/>
 		<pathelement path="${host.builddir}"/>
 		<pathelement path="${applet.builddir}"/>
+		<pathelement path="${base.lib}"/>
 	</path>
 	<!--<pathelement path="${host.builddir}"/>-->
 	<!--<pathelement path="${applet.builddir}"/>-->
@@ -123,6 +125,7 @@
 	<path id="exportpath">
 		<pathelement path="${javacardkit.exports}"/>
 		<pathelement path="${applet.builddir}"/>
+		<pathelement path="${base.lib}"/>
 	</path>
 
 	<!-- CLIENT -->

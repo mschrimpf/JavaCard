@@ -8,6 +8,7 @@ import nz.ac.aut.hss.card.client.RemoteObject;
 
 import javax.crypto.SecretKey;
 import java.rmi.RemoteException;
+import java.security.PublicKey;
 
 /**
  * A simple Java Card host application that demonstrates a JCRMI host
@@ -41,10 +42,10 @@ public class SecureHost {
 			System.out.println("Got remote object");
 
 			// public key
-//			System.out.println("Retrieving public key");
-//			byte[] publicKeyBytes = remote.getPublicKeyBytes();
-//			final PublicKey publicKey = KeyUtil.toKey(publicKeyBytes);
-//			System.out.println(publicKey);
+			System.out.println("Retrieving public key");
+			byte[] publicKeyBytes = remote.getPublicKeyBytes();
+			final PublicKey publicKey = KeyUtil.toKey(publicKeyBytes);
+			System.out.println(publicKey);
 //			System.out.println("Using asymmetric encryption");
 //			remote.useAsymmetricEncryption();
 //			accessor.setPublicKey(publicKey);
