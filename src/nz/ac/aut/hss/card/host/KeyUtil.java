@@ -2,8 +2,8 @@ package nz.ac.aut.hss.card.host;
 
 import nz.ac.aut.hss.card.client.KeySpec;
 
+import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 import java.math.BigInteger;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -31,11 +31,8 @@ public class KeyUtil {
 	}
 
 	public static SecretKey generateAESKey(int keySize) throws NoSuchAlgorithmException {
-//		KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-//		keyGen.init(keySize);
-//		return keyGen.generateKey();
-		byte[] keyBytes = {103, -125, -92, 79, -126, -49, 48, -84, -85, 113,
-				-13, 41, -58, -106, -17, 31};
-		return new SecretKeySpec(keyBytes, "AES");
+		KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+		keyGen.init(keySize);
+		return keyGen.generateKey();
 	}
 }

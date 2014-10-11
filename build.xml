@@ -201,7 +201,7 @@
 
 	<!-- HOST -->
 
-	<target name="build-host" depends="build-applet">
+	<target name="build-host">
 		<mkdir dir="${host.builddir}"/>
 		<javac debug="yes" optimize="no" includeantruntime="false"
 			   srcdir="${host.sourcedir}/${host.package-dir}"

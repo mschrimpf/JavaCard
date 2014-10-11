@@ -5,10 +5,7 @@
  */
 package nz.ac.aut.hss.card.client;
 
-import javacard.framework.APDU;
-import javacard.framework.ISO7816;
-import javacard.framework.JCSystem;
-import javacard.framework.Util;
+import javacard.framework.*;
 import javacard.framework.service.BasicService;
 import javacard.framework.service.SecurityService;
 import javacard.security.AESKey;
@@ -18,7 +15,9 @@ import javacard.security.RSAPrivateKey;
 import javacardx.crypto.Cipher;
 
 public class Security extends BasicService implements SecurityService {
-	private static final short ENCRYPT_NONE = 0, ENCRYPT_ASYMMETRIC = 1, ENCRYPT_SYMMETRIC = 2;
+	private static final short ENCRYPT_NONE = 0,
+			ASYMMETRIC_REQUEST = 1, ENCRYPT_ASYMMETRIC = 2,
+			SYMMETRIC_REQUEST = 3, ENCRYPT_SYMMETRIC = 4;
 	private short mode;
 
 	private boolean appProviderAuthenticated, cardIssuerAuthenticated,
@@ -47,11 +46,6 @@ public class Security extends BasicService implements SecurityService {
 		encryptCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
 		decryptCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
 		mode = ENCRYPT_NONE;
-
-
-		setSessionKey(new byte[]{103, -125, -92, 79, -126, -49, 48, -84, -85, 113,
-				-13, 41, -58, -106, -17, 31});
-		useSymmetric();
 	}
 
 	public void setSessionKey(final byte[] keyBytes) throws CryptoException {
@@ -64,13 +58,13 @@ public class Security extends BasicService implements SecurityService {
 	}
 
 	public void useSymmetric() {
-		mode = ENCRYPT_SYMMETRIC;
+		mode = SYMMETRIC_REQUEST;
 	}
 
 	public void usePrivateKey() {
 		decryptCipher = Cipher.getInstance(Cipher.ALG_RSA_PKCS1, false);
-		decryptCipher.init(privateKey, Cipher.MODE_DECRYPT);
-		mode = ENCRYPT_ASYMMETRIC;
+		decryptCipher.init(privateKey, Cipher.MODE_DECRYPT); // TODO init in decrypt method
+		mode = ASYMMETRIC_REQUEST;
 	}
 
 	// helper method that resets the security settings
@@ -89,6 +83,14 @@ public class Security extends BasicService implements SecurityService {
 		if (selectingApplet())
 			return false; //allow other Services to postprocess if needed
 		if (mode == ENCRYPT_NONE) {
+			return false;
+		}
+		if (mode == SYMMETRIC_REQUEST) {
+			mode = ENCRYPT_SYMMETRIC;
+			return false;
+		}
+		if(mode == ASYMMETRIC_REQUEST) {
+			mode = ENCRYPT_ASYMMETRIC;
 			return false;
 		}
 
@@ -113,8 +115,14 @@ public class Security extends BasicService implements SecurityService {
 				buffer.length) { // outgoing buffer can not accommodate the padding
 			CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
 		}
-		encryptCipher.init(key, Cipher.MODE_ENCRYPT, KeySpec.SESSION_IV_BYTES, (short) 0,
-				(short) KeySpec.SESSION_IV_BYTES.length);
+		if(mode == ENCRYPT_SYMMETRIC) {
+			encryptCipher.init(key, Cipher.MODE_ENCRYPT, KeySpec.SESSION_IV_BYTES, (short) 0,
+					(short) KeySpec.SESSION_IV_BYTES.length);
+		} else if(mode == ENCRYPT_ASYMMETRIC) {
+			encryptCipher.init(privateKey, Cipher.MODE_ENCRYPT);
+		} else {
+			ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+		}
 		encryptCipher.doFinal(padded, (short) 0, paddedLength, buffer, OFFSET_OUT_RDATA);
 		buffer[OFFSET_OUT_LA] = (byte) paddedLength;
 		return true; // don't allow any other postprocessing
@@ -138,6 +146,14 @@ public class Security extends BasicService implements SecurityService {
 		if (mode == ENCRYPT_NONE) { // not initialized
 			return false;
 		}
+		if (mode == SYMMETRIC_REQUEST) {
+			mode = ENCRYPT_SYMMETRIC;
+			return false;
+		}
+		if(mode == ASYMMETRIC_REQUEST) {
+			mode = ENCRYPT_ASYMMETRIC;
+			return false;
+		}
 
 		// set the appropriate command security properties
 		commandProperties |=
@@ -151,8 +167,14 @@ public class Security extends BasicService implements SecurityService {
 		if (lc % BLOCK_SIZE != 0)
 			CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
 		byte[] deciphertext = getTransientArray(lc);
-		decryptCipher.init(key, Cipher.MODE_DECRYPT, KeySpec.SESSION_IV_BYTES, (short) 0,
-				(short) KeySpec.SESSION_IV_BYTES.length);
+		if(mode == ENCRYPT_SYMMETRIC) {
+			decryptCipher.init(key, Cipher.MODE_DECRYPT, KeySpec.SESSION_IV_BYTES, (short) 0,
+					(short) KeySpec.SESSION_IV_BYTES.length);
+		} else if(mode == ENCRYPT_ASYMMETRIC) {
+			decryptCipher.init(privateKey, Cipher.MODE_DECRYPT);
+		} else {
+			ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+		}
 		decryptCipher.doFinal(buffer, ISO7816.OFFSET_CDATA, lc, deciphertext,
 				(short) 0);
 		byte numPadding = deciphertext[(short) (lc - 1)];

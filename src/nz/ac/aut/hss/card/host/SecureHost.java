@@ -53,24 +53,23 @@ public class SecureHost {
 			// session key
 			System.out.println("Generating session key");
 			SecretKey secretKey = KeyUtil.generateAESKey(KeySpec.SESSION_KEY_LENGTH_BITS);
-//			System.out.println("Setting session key on remote");
-//			remote.setSecretKey(secretKey.getEncoded());
-//			Thread.sleep(1000);
-//			System.out.println("Using symmetric encryption");
-//			remote.useSymmetricEncryption();
+			System.out.println("Setting session key on remote");
+			remote.setSecretKey(secretKey.getEncoded());
+			System.out.println("Using symmetric encryption");
+			remote.useSymmetricEncryption();
 			accessor.setSessionKey(secretKey);
 			System.out.println("OK");
 
 			System.out.println();
 
 			// PIN
-//			final byte[] incorrectPinBytes = {0x01, 0x02, 0x03, 0x04};
-//			enterPin(remote, incorrectPinBytes, "incorrect");
-//
-//			final byte[] pinBytes = {0x04, 0x03, 0x02, 0x01};
-//			enterPin(remote, pinBytes, "correct");
-//
-//			System.out.println();
+			final byte[] incorrectPinBytes = {0x01, 0x02, 0x03, 0x04};
+			enterPin(remote, incorrectPinBytes, "incorrect");
+
+			final byte[] pinBytes = {0x04, 0x03, 0x02, 0x01};
+			enterPin(remote, pinBytes, "correct");
+
+			System.out.println();
 
 			// get details
 			System.out.println("Retrieving details");
