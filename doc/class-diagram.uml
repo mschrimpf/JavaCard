@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Diagram>
+  <ID>JAVA</ID>
+  <OriginalElement>nz.ac.aut.hss.card</OriginalElement>
+  <nodes>
+    <node x="597.5" y="168.0">nz.ac.aut.hss.card.host.SecureHost</node>
+    <node x="1.0" y="279.0">nz.ac.aut.hss.card.client.RemoteObjectImpl</node>
+    <node x="224.0" y="0.0">nz.ac.aut.hss.card.client.Security</node>
+    <node x="535.0" y="0.0">nz.ac.aut.hss.card.host.SecureAccessor</node>
+    <node x="196.25" y="470.0">nz.ac.aut.hss.card.client.SecureApplet</node>
+    <node x="0.0" y="66.5">nz.ac.aut.hss.card.client.RemoteObject</node>
+  </nodes>
+  <notes />
+  <edges>
+    <edge source="nz.ac.aut.hss.card.client.RemoteObjectImpl" target="nz.ac.aut.hss.card.client.RemoteObject">
+      <point x="-101.0" y="-70.5" />
+      <point x="0.0" y="48.0" />
+    </edge>
+    <edge source="nz.ac.aut.hss.card.client.SecureApplet" target="nz.ac.aut.hss.card.client.Security">
+      <point x="58.5" y="-81.0" />
+      <point x="371.75" y="445.0" />
+      <point x="423.5" y="445.0" />
+      <point x="66.5" y="114.5" />
+    </edge>
+    <edge source="nz.ac.aut.hss.card.client.RemoteObjectImpl" target="nz.ac.aut.hss.card.client.Security">
+      <point x="101.0" y="-70.5" />
+      <point x="304.0" y="254.0" />
+      <point x="290.5" y="254.0" />
+      <point x="-66.5" y="114.5" />
+    </edge>
+    <edge source="nz.ac.aut.hss.card.client.SecureApplet" target="nz.ac.aut.hss.card.client.RemoteObjectImpl">
+      <point x="-58.5" y="-81.0" />
+      <point x="254.75" y="445.0" />
+      <point x="203.0" y="445.0" />
+      <point x="0.0" y="70.5" />
+    </edge>
+    <edge source="nz.ac.aut.hss.card.host.SecureHost" target="nz.ac.aut.hss.card.host.SecureAccessor">
+      <point x="0.0" y="-25.5" />
+      <point x="0.0" y="59.0" />
+    </edge>
+  </edges>
+  <settings layout="Hierarchic Group" zoom="0.8190184049079755" x="406.5" y="316.0" />
+  <SelectedNodes />
+  <Categories>
+    <Category>Inner Classes</Category>
+    <Category>Properties</Category>
+    <Category>Methods</Category>
+    <Category>Constructors</Category>
+  </Categories>
+  <SCOPE>All</SCOPE>
+  <VISIBILITY>private</VISIBILITY>
+</Diagram>
+

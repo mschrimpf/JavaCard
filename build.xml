@@ -20,6 +20,8 @@
 	<property name="base.sourcedir" value="src"/>
 	<property name="base.lib" value="lib/bcprov-jdk15on-151.jar"/>
 
+
+    <property name="jdk.home" value="C:\Program Files\Java\jdk1.7.0_67"/>
 	<property name="applet.name" value="SecureApplet"/>
 	<property name="applet.sourcedir" value="${base.sourcedir}"/>
 	<property name="applet.package" value="${base.package}.client"/>

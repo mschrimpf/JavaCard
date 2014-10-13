@@ -8,6 +8,7 @@ import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import java.io.IOException;
 import java.security.*;
+import java.security.interfaces.RSAPublicKey;
 
 /**
  * A CardAccessor that handles encryption and decryption of APDU that
@@ -41,7 +42,6 @@ public class SecureAccessor implements CardAccessor {
 	private static final byte OFFSET_RDATA = (byte) 2;
 	private static final boolean DISPLAY_APDU = true; // use for debug
 	private PublicKey publicKey;
-	private boolean splitEncryption;
 
 	public SecureAccessor(CardAccessor ca) {
 		this.ca = ca;
@@ -58,7 +58,6 @@ public class SecureAccessor implements CardAccessor {
 			System.err.println("Padding scheme not available: " + e);
 		}
 		this.publicKey = null;
-		this.splitEncryption = false;
 	}
 
 	public void setPublicKey(final PublicKey publicKey) throws InvalidKeyException {
@@ -73,7 +72,6 @@ public class SecureAccessor implements CardAccessor {
 			System.err.println("Padding scheme not available: " + e);
 		}
 		this.sessionKey = null;
-		this.splitEncryption = true;
 	}
 
 	public byte[] exchangeAPDU(byte[] sendData) throws IOException {
@@ -90,24 +88,30 @@ public class SecureAccessor implements CardAccessor {
 		}
 	}
 
-	private byte[] encrypt(final byte[] sendData) throws IOException {
+	private byte[] encrypt(final byte[] buffer) throws IOException {
 		if (DISPLAY_APDU) {
 			System.out.println("PLAINTEXT COMMAND APDU:");
-			for (final byte aSendData : sendData) System.out.print(" " + Integer.toHexString(aSendData & 0xFF));
+			for (final byte aSendData : buffer) System.out.print(" " + Integer.toHexString(aSendData & 0xFF));
 			System.out.println();
 		}
+        // byte[] pretendsendData = addHash(buffer);
+        // byte[] sendData = removeHash(pretendsendData);
+        byte[] sendData = addHash(buffer);
 		byte lc = sendData[OFFSET_LC];
 		byte[] plaintext = pad(sendData, OFFSET_CDATA, lc);
 		initCipher(Cipher.ENCRYPT_MODE);
 		byte[] ciphertext;
 		try {
-			if (splitEncryption) {
-				byte[][] plaintexts = split(plaintext, 32);
-				byte[][] ciphertexts = applyCipher(plaintexts, cipher);
-				ciphertext = merge(ciphertexts);
-			} else {
-				ciphertext = cipher.doFinal(plaintext);
+			if (publicKey != null) {
+				final int plaintextBitLength = plaintext.length * 8;
+				final int keySize = ((RSAPublicKey) publicKey).getModulus().bitLength();
+				if (plaintextBitLength < keySize) {
+//					throw new IllegalArgumentException(
+					System.err.println(
+							"Data is too big (" + plaintextBitLength + " bits > " + keySize + ")");
+				}
 			}
+			ciphertext = cipher.doFinal(plaintext);
 		} catch (IllegalBlockSizeException e) {
 			throw new IOException("Illegal padding in encryption", e);
 		} catch (BadPaddingException e) {
@@ -132,49 +136,40 @@ public class SecureAccessor implements CardAccessor {
 		}
 		return encryptedCommand;
 	}
-
-	private byte[] merge(final byte[][] bytes) {
-		int length = 0;
-		for (final byte[] aByte : bytes) {
-			length += aByte.length;
-		}
-		byte[] result = new byte[length];
-
-		int offset = 0;
-		for (final byte[] aByte : bytes) {
-			System.arraycopy(aByte, 0, result, offset, aByte.length);
-			offset += aByte.length;
-		}
-		return result;
-	}
-
-	private byte[][] applyCipher(final byte[][] plaintexts, final Cipher cipher)
-			throws BadPaddingException, IllegalBlockSizeException {
-		byte[][] ciphertexts = new byte[plaintexts.length][];
-
-		for (int i = 0; i < ciphertexts.length; i++) {
-			final int plaintextBitLength = plaintexts[i].length * 8;
-			System.out.println("Data size: " + plaintextBitLength + " bits)");
-			ciphertexts[i] = cipher.doFinal(plaintexts[i]);
-		}
-		return ciphertexts;
-	}
-
-	private byte[][] split(final byte[] bytes, int amount) {
-		byte[][] result = new byte[amount][];
-		int eachLength = bytes.length / amount;
-		int offset = 0;
-		for (int i = 0; i < result.length; i++) {
-			int length;
-			if (i < result.length - 1) { // pre-last
-				length = eachLength;
-			} else { // last
-				length = bytes.length - offset;
-			}
-			result[i] = new byte[length];
-			System.arraycopy(bytes, offset, result[i], 0, length);
-
-			offset += length;
+    
+    private byte[] addHash(byte[] unpaddedData){
+        //***************CALCULATE ORIGINAL AND MODIFIED LEGNTH***************
+        byte bytelength = unpaddedData[OFFSET_LC];
+        short length = (short)bytelength;
+        short newlength = (short)(length + 1);
+        byte bytenewlength = (byte)(newlength);
+        
+        //***************GENERATE ARRAY FOR LARGER BODY OF APDU***************       
+        byte[] newbuffer = new byte[newlength];
+       System.arraycopy(unpaddedData, OFFSET_CDATA, newbuffer,
+				(short) 0, length);
+		//***************CALCULATE  HASH CODE AND PUT INTO BODY OF APDU***************
+        byte hash = getHash(newbuffer, length);
+        newbuffer[(short)(newbuffer.length-1)] = hash;
+		
+        // //***************PUT NEW BODY INTO APDU MESSAGE***************
+		byte[] buffer = new byte[((short)(unpaddedData.length + 1))];
+        System.arraycopy(unpaddedData, (short) 0, buffer,
+				(short) 0, OFFSET_LC);
+        buffer[OFFSET_LC] = bytenewlength;
+        //copies new body of apdu to buffer
+       System.arraycopy(newbuffer, (short) 0, buffer,
+				(short)(OFFSET_LC + 1), newlength);     
+        //last byte remains the same
+        buffer[(short)(buffer.length-1)] = unpaddedData[(short)(unpaddedData.length-1)];
+        
+        return buffer;
+    }
+    
+    public static byte getHash(byte[] message, short length) {
+		byte result = message[0];
+		for (short i = 1; i < length; i++) {
+			result ^= message[i];
 		}
 		return result;
 	}
@@ -221,8 +216,45 @@ public class SecureAccessor implements CardAccessor {
 						(decryptedResponse[i] & 0xFF));
 			System.out.println();
 		}
+        
 		return decryptedResponse;
 	}
+	
+	private boolean checkHash(byte[] data){
+        byte bytelength = data[OFFSET_LC];
+        short length = (short)bytelength;
+        byte[] bodybuffer = new byte[((short)(length))];
+        System.arraycopy(data, OFFSET_CDATA                                                                                                                                                                                                                                                                                  , bodybuffer,
+				(short) 0, (short)(length));
+          int i = 0;
+         byte hash = getHash(bodybuffer, (short)(length-1));
+         return hash == bodybuffer[bodybuffer.length-1];
+    }
+    
+    private byte[] removeHash(byte[] data){
+		// //******************REMOVE HASH******************
+        //create temp buffer without hashcode included
+        byte bytelength = data[OFFSET_LC];
+        short length = (short)bytelength;
+        System.out.println("ahhh length: " + length);
+        byte[] tempbuffer = new byte[((short)(data.length))];
+        //copy first 4 bytes of buffer into temp buffer
+        System.arraycopy(data, (short)(0), tempbuffer, (short) 0, OFFSET_LC);
+        //make 5th byte the new length of the new body of message
+        tempbuffer[OFFSET_LC] = (byte)(length);
+        //copy the new body of the message into the temp buffer
+        System.arraycopy(data, OFFSET_CDATA, tempbuffer,OFFSET_CDATA, length);
+        //copy final byte into temp buffer
+        tempbuffer[(short)(tempbuffer.length-1)] = data[(short)(data.length-1)];
+		System.out.println("removed hash");
+		int j = 0;
+        for(byte b : tempbuffer){
+            System.out.println(":( " + j + ": " + b);
+            j++;
+         }  
+        return tempbuffer;
+        // buffer = tempbuffer;
+    }
 
 	private void initCipher(final int mode) {
 		try {
@@ -253,7 +285,9 @@ public class SecureAccessor implements CardAccessor {
 		byte numPadding = (byte) (paddedLength - unpaddedLength);
 		for (int i = unpaddedLength; i < paddedLength; i++)
 			padded[i] = numPadding;
-		return padded;
+		int j = 0;    
+        return padded;
+        
 	}
 
 }
