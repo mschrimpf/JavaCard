@@ -1,0 +1,388 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="13.0">
+  <zoom_level>5</zoom_level>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>0</x>
+      <y>165</y>
+      <w>205</w>
+      <h>280</h>
+    </coordinates>
+    <panel_attributes>nz.ac.aut.hss.card.host::SecureAccessor
+--
+-RSA_ALGORITHM = "RSA/NONE/PKCS1Padding": String
+-AES_ALGORITHM = "AES/CBC/NoPadding": String
+-ca: CardAccessor
+-sessionKey: SecretKey
+-initVector: IvParameterSpec
+-cipher: Cipher
+-BLOCK_SIZE = 16: byte
+-CLA_SECURITY_BITS_MASK = (byte) 0x0C: byte
+-CLA_ISO7816 = (byte) 0x00: byte
+-INS_SELECT = (byte) 0xA4: byte
+-OFFSET_CLA = (byte) 0: byte
+-OFFSET_INS = (byte) 1: byte
+-OFFSET_LC = (byte) 4: byte
+-OFFSET_CDATA = (byte) 5: byte
+-OFFSET_SW1 = (byte) 0: byte
+-OFFSET_SW2 = (byte) 1: byte
+-OFFSET_RDATA = (byte) 2: byte
+-DISPLAY_APDU = true: boolean
+-publicKey: PublicKey
+-splitEncryption: boolean
+--
++SecureAccessor(CardAccessor ca): ctor
++setSessionKey(SecretKey key): void
++setPublicKey(final PublicKey publicKey): void
++exchangeAPDU(byte[] sendData): byte[]
+-encrypt(final byte[] sendData): byte[]
+-merge(final byte[][] bytes): byte[]
+-applyCipher(final byte[][] plaintexts, final Cipher cipher): byte[][]
+-split(final byte[] bytes, int amount): byte[][]
+-decrypt(final byte[] encryptedResponse): byte[]
+-initCipher(final int mode): void
++closeCard(): void
+-pad(byte[] unpadded, int start, int unpaddedLength): byte[]</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>905</x>
+      <y>190</y>
+      <w>285</w>
+      <h>240</h>
+    </coordinates>
+    <panel_attributes>nz.ac.aut.hss.card.client::Security
+--
+-ENCRYPT_NONE = 0, 
+  ASYMMETRIC_REQUEST = 1, 
+  ENCRYPT_ASYMMETRIC = 2, 
+  SYMMETRIC_REQUEST = 3, 
+  ENCRYPT_SYMMETRIC = 4: short
+-mode: short
+-appProviderAuthenticated, cardIssuerAuthenticated, cardHolderAuthenticated: boolean
+-sessionProperties: byte
+-commandProperties: byte
+-tempTransientArray: byte[]
+-BLOCK_SIZE = 16: byte
+-CLA_SECURITY_BITS_MASK = (byte) 0x0C: byte
+-OFFSET_OUT_LA = (byte) 4: byte
+-OFFSET_OUT_RDATA = (byte) 5: byte
+-privateKey: RSAPrivateKey
+-key: AESKey
+-encryptCipher, decryptCipher: Cipher
+--
++Security(final RSAPrivateKey privateKey): ctor
++setSessionKey(final byte[] keyBytes): void
++useSymmetric(): void
++usePrivateKey(): void
+-resetSecuritySettings(): void
++processDataOut(APDU apdu): boolean
++processDataIn(APDU apdu): boolean
++isAuthenticated(short principal): boolean
++isChannelSecure(byte properties): boolean
++isCommandSecure(byte properties): boolean
+-getTransientArray(short minSize): byte[]
++clearKey(): void
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>570</x>
+      <y>330</y>
+      <w>325</w>
+      <h>205</h>
+    </coordinates>
+    <panel_attributes>nz.ac.aut.hss.card.client::RemoteObjectImpl
+--
++SW_VERIFICATION_FAILED = 0x6300: short
+-REQUEST_DENIED = (short) 0x6003: short
+-name, accNum, securityCode, expiryDate: byte[]
+-security: Security
+-publicKeyBytes: byte[]
+-applet: SecureApplet
+--
++RemoteObjectImpl(final Security security, final byte[] publicKeyBytes, final SecureApplet applet): ctor
++checkPIN(byte[] pinBytes): short
+-clearData(): void
++getPublicKeyBytes(): byte[]
++useAsymmetricEncryption(): void
++setSecretKey(final byte[] keyBytes): void
++useSymmetricEncryption(): void
+-clearArray(byte[] array): void
++getName(): byte[]
++getAccountNumber(): byte[]
++getExpiryDate(): byte[]
++getSecurityCode(): byte[]
+-assurePINAndConfidentiality(): void
+-assureConfidentiality(): void
+-assurePIN(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>710</x>
+      <y>35</y>
+      <w>245</w>
+      <h>130</h>
+    </coordinates>
+    <panel_attributes>nz.ac.aut.hss.card.client::SecureApplet
+--
+-SET_PIN = (byte) 0x9C: byte
+-PIN_TRY_LIMIT = (byte) 0x03: byte
+-MAX_PIN_SIZE = (byte) 0x08: byte
+-dispatcher: Dispatcher
+-pin: OwnerPIN
+--
+#SecureApplet(): ctor
++install(byte[] bArray, short bOffset, byte bLength): void
++process(APDU apdu): void
++isPINValidated(): boolean
+-setPin(final APDU apdu): void
++checkPIN(final byte[] pinBytes, final short offset, final byte length): boolean
++getPINTriesRemaining(): short
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>455</x>
+      <y>35</y>
+      <w>130</w>
+      <h>115</h>
+    </coordinates>
+    <panel_attributes>&lt;&lt;interface&gt;&gt;
+nz.ac.aut.hss.card.client::RemoteObject
+--
+--
++checkPIN(byte[] pinBytes): short
++getPublicKeyBytes(): byte[]
++useAsymmetricEncryption(): void
++setSecretKey(byte[] keyBytes): void
++getName(): byte[]
++getAccountNumber(): byte[]
++getExpiryDate(): byte[]
++getSecurityCode(): byte[]
++useSymmetricEncryption(): void
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>245</x>
+      <y>330</y>
+      <w>315</w>
+      <h>70</h>
+    </coordinates>
+    <panel_attributes>nz.ac.aut.hss.card.client::KeySpec
+--
++EXPONENT_OFFSET = 0: short
++EXPONENT_LENGTH = 3: short
++MODULOS_OFFSET = EXPONENT_OFFSET + EXPONENT_LENGTH: short
++MODULOS_LENGTH = 64: short
++SESSION_KEY_LENGTH_BITS = KeyBuilder.LENGTH_AES_128: short
++SESSION_IV_BYTES = { 66, 49, 70, 39, 120, -90, 81, -83, 60, -19, 6, 123, 53, 91, -80, -89 }: byte[]
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>905</x>
+      <y>465</y>
+      <w>145</w>
+      <h>70</h>
+    </coordinates>
+    <panel_attributes>nz.ac.aut.hss.card.client::Authenticator
+--
+--
+-getHash(byte[] message, short length): byte
++appendHash(byte[] originalmessage): byte[]
+-recalculateHash(byte[] message): byte
++checkHash(byte[] message): boolean
++removeHash(final byte[] message): byte[]
+
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>40</x>
+      <y>35</y>
+      <w>265</w>
+      <h>60</h>
+    </coordinates>
+    <panel_attributes>nz.ac.aut.hss.card.host::SecureHost
+--
+--
++main(String[] args): void
+-print(final String description, final byte[] bytes): void
+-enterPin(final RemoteObject remoteProxy, final byte[] pinBytes, String label): void
+-printPin(final String pinDescription, final byte[] pinBytes): void
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>610</x>
+      <y>210</y>
+      <w>140</w>
+      <h>45</h>
+    </coordinates>
+    <panel_attributes>nz.ac.aut.hss.card.client::KeyUtil
+--
+--
++createRSAPair(): KeyPair
++toBytes(RSAPublicKey publicKey): byte[]
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>245</x>
+      <y>210</y>
+      <w>140</w>
+      <h>45</h>
+    </coordinates>
+    <panel_attributes>nz.ac.aut.hss.card.host::KeyUtil
+--
+--
++toKey(byte[] bytes): PublicKey
++generateAESKey(int keySize): SecretKey
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>905</x>
+      <y>150</y>
+      <w>24</w>
+      <h>49</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>15;40;15;15</additional_attributes>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>85</x>
+      <y>80</y>
+      <w>24</w>
+      <h>94</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>15;85;15;15</additional_attributes>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>265</x>
+      <y>80</y>
+      <w>24</w>
+      <h>139</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>15;130;15;15</additional_attributes>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>295</x>
+      <y>240</y>
+      <w>24</w>
+      <h>99</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;.</panel_attributes>
+    <additional_attributes>15;90;15;15</additional_attributes>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>290</x>
+      <y>55</y>
+      <w>174</w>
+      <h>24</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>165;15;15;15</additional_attributes>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>410</x>
+      <y>240</y>
+      <w>294</w>
+      <h>99</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;.</panel_attributes>
+    <additional_attributes>15;90;285;15</additional_attributes>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>510</x>
+      <y>135</y>
+      <w>234</w>
+      <h>204</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>15;15;15;150;225;150;225;195</additional_attributes>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>570</x>
+      <y>55</y>
+      <w>149</w>
+      <h>24</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>15;15;140;15</additional_attributes>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>780</x>
+      <y>150</y>
+      <w>24</w>
+      <h>189</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;.</panel_attributes>
+    <additional_attributes>15;180;15;15</additional_attributes>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>720</x>
+      <y>150</y>
+      <w>24</w>
+      <h>69</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>15;60;15;15</additional_attributes>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>965</x>
+      <y>415</y>
+      <w>24</w>
+      <h>59</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>15;50;15;15</additional_attributes>
+  </element>
+</diagram>
