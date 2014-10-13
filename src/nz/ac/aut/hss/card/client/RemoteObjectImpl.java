@@ -4,6 +4,7 @@ import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
 import javacard.framework.UserException;
 import javacard.framework.service.CardRemoteObject;
+import javacard.framework.service.SecurityService;
 
 import java.rmi.RemoteException;
 
@@ -99,12 +100,10 @@ public class RemoteObjectImpl implements RemoteObject {
 	}
 
 	public void setSecretKey(final byte[] keyBytes) throws RemoteException, UserException {
-		assurePIN();
 		security.setSessionKey(keyBytes);
 	}
 
 	public void useSymmetricEncryption() throws RemoteException, UserException {
-		assurePIN();
 		security.useSymmetric();
 	}
 
@@ -144,15 +143,15 @@ public class RemoteObjectImpl implements RemoteObject {
 	}
 
 	private void assureConfidentiality() throws UserException {
-//		if (!security.isCommandSecure
-//				(SecurityService.PROPERTY_OUTPUT_CONFIDENTIALITY))
-//			UserException.throwIt(REQUEST_DENIED);
+		if (!security.isCommandSecure
+				(SecurityService.PROPERTY_OUTPUT_CONFIDENTIALITY))
+			UserException.throwIt(REQUEST_DENIED);
 //		if(! security.isAuthenticated(SecurityService.PRINCIPAL_CARDHOLDER))
 //			UserException.throwIt(SW_VERIFICATION_FAILED);
 	}
 
 	private void assurePIN() {
-//		if (!applet.isPINValidated())
-//			ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
+		if (!applet.isPINValidated())
+			ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
 	}
 }

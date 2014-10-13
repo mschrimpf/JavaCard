@@ -42,6 +42,7 @@ public class SecureAccessor implements CardAccessor {
 	private static final byte OFFSET_RDATA = (byte) 2;
 	private static final boolean DISPLAY_APDU = true; // use for debug
 	private PublicKey publicKey;
+	private boolean splitEncryption;
 
 	public SecureAccessor(CardAccessor ca) {
 		this.ca = ca;
@@ -58,6 +59,7 @@ public class SecureAccessor implements CardAccessor {
 			System.err.println("Padding scheme not available: " + e);
 		}
 		this.publicKey = null;
+		this.splitEncryption = false;
 	}
 
 	public void setPublicKey(final PublicKey publicKey) throws InvalidKeyException {
@@ -72,6 +74,7 @@ public class SecureAccessor implements CardAccessor {
 			System.err.println("Padding scheme not available: " + e);
 		}
 		this.sessionKey = null;
+		this.splitEncryption = true;
 	}
 
 	public byte[] exchangeAPDU(byte[] sendData) throws IOException {
@@ -99,16 +102,13 @@ public class SecureAccessor implements CardAccessor {
 		initCipher(Cipher.ENCRYPT_MODE);
 		byte[] ciphertext;
 		try {
-			if (publicKey != null) {
-				final int plaintextBitLength = plaintext.length * 8;
-				final int keySize = ((RSAPublicKey) publicKey).getModulus().bitLength();
-				if (plaintextBitLength < keySize) {
-//					throw new IllegalArgumentException(
-					System.err.println(
-							"Data is too big (" + plaintextBitLength + " bits > " + keySize + ")");
-				}
+			if (splitEncryption) {
+				byte[][] plaintexts = split(plaintext, 32);
+				byte[][] ciphertexts = applyCipher(plaintexts, cipher);
+				ciphertext = merge(ciphertexts);
+			} else {
+				ciphertext = cipher.doFinal(plaintext);
 			}
-			ciphertext = cipher.doFinal(plaintext);
 		} catch (IllegalBlockSizeException e) {
 			throw new IOException("Illegal padding in encryption", e);
 		} catch (BadPaddingException e) {
@@ -132,6 +132,58 @@ public class SecureAccessor implements CardAccessor {
 			System.out.println();
 		}
 		return encryptedCommand;
+	}
+
+	private byte[] merge(final byte[][] bytes) {
+		int length = 0;
+		for (final byte[] aByte : bytes) {
+			length += aByte.length;
+		}
+		byte[] result = new byte[length];
+
+		int offset = 0;
+		for (final byte[] aByte : bytes) {
+			System.arraycopy(aByte, 0, result, offset, aByte.length);
+			offset += aByte.length;
+		}
+		return result;
+	}
+
+	private byte[][] applyCipher(final byte[][] plaintexts, final Cipher cipher)
+			throws BadPaddingException, IllegalBlockSizeException {
+		byte[][] ciphertexts = new byte[plaintexts.length][];
+
+		final int keySize = ((RSAPublicKey) publicKey).getModulus().bitLength();
+
+		for (int i = 0; i < ciphertexts.length; i++) {
+			final int plaintextBitLength = plaintexts[i].length * 8;
+			if (plaintextBitLength < keySize) {
+//					throw new IllegalArgumentException(
+				System.err.println(
+						"Data is too big (" + plaintextBitLength + " bits > " + keySize + ")");
+			}
+			ciphertexts[i] = cipher.doFinal(plaintexts[i]);
+		}
+		return ciphertexts;
+	}
+
+	private byte[][] split(final byte[] bytes, int amount) {
+		byte[][] result = new byte[amount][];
+		int eachLength = bytes.length / amount;
+		int offset = 0;
+		for (int i = 0; i < result.length; i++) {
+			int length;
+			if (i < result.length - 1) { // pre-last
+				length = eachLength;
+			} else { // last
+				length = bytes.length - offset;
+			}
+			result[i] = new byte[length];
+			System.arraycopy(bytes, offset, result[i], 0, length);
+
+			offset += length;
+		}
+		return result;
 	}
 
 	private byte[] decrypt(final byte[] encryptedResponse) throws IOException {

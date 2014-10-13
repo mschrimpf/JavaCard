@@ -11,7 +11,6 @@ import javacard.security.RSAPublicKey;
  * @created 09.10.2014
  */
 public class KeyUtil {
-
 	public static KeyPair createRSAPair() {
 		KeyPair keypair = new KeyPair(KeyPair.ALG_RSA, KeyBuilder.LENGTH_RSA_512);
 		keypair.genKeyPair();
