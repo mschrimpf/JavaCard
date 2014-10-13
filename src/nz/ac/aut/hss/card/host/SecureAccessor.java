@@ -8,7 +8,6 @@ import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import java.io.IOException;
 import java.security.*;
-import java.security.interfaces.RSAPublicKey;
 
 /**
  * A CardAccessor that handles encryption and decryption of APDU that
@@ -153,15 +152,9 @@ public class SecureAccessor implements CardAccessor {
 			throws BadPaddingException, IllegalBlockSizeException {
 		byte[][] ciphertexts = new byte[plaintexts.length][];
 
-		final int keySize = ((RSAPublicKey) publicKey).getModulus().bitLength();
-
 		for (int i = 0; i < ciphertexts.length; i++) {
 			final int plaintextBitLength = plaintexts[i].length * 8;
-			if (plaintextBitLength < keySize) {
-//					throw new IllegalArgumentException(
-				System.err.println(
-						"Data is too big (" + plaintextBitLength + " bits > " + keySize + ")");
-			}
+			System.out.println("Data size: " + plaintextBitLength + " bits)");
 			ciphertexts[i] = cipher.doFinal(plaintexts[i]);
 		}
 		return ciphertexts;
