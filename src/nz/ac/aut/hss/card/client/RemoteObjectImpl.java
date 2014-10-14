@@ -99,12 +99,10 @@ public class RemoteObjectImpl implements RemoteObject {
 	}
 
 	public void setSecretKey(final byte[] keyBytes) throws RemoteException, UserException {
-		assurePIN();
 		security.setSessionKey(keyBytes);
 	}
 
 	public void useSymmetricEncryption() throws RemoteException, UserException {
-		assurePIN();
 		security.useSymmetric();
 	}
 
@@ -113,8 +111,6 @@ public class RemoteObjectImpl implements RemoteObject {
 			array[i] = 0;
 		}
 	}
-
-	// details
 
 	public byte[] getName() throws RemoteException, UserException {
 		assurePINAndConfidentiality();
@@ -136,17 +132,12 @@ public class RemoteObjectImpl implements RemoteObject {
 		return securityCode;
 	}
 
-	// security
-
 	private void assurePINAndConfidentiality() throws UserException {
 		assurePIN();
 		assureConfidentiality();
 	}
 
 	private void assureConfidentiality() throws UserException {
-//		if (!security.isCommandSecure
-//				(SecurityService.PROPERTY_OUTPUT_CONFIDENTIALITY))
-//			UserException.throwIt(REQUEST_DENIED);
 		if(! security.isAuthenticated(SecurityService.PRINCIPAL_CARDHOLDER))
 			UserException.throwIt(SW_VERIFICATION_FAILED);
 	}

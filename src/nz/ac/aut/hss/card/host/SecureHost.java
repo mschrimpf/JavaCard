@@ -9,6 +9,7 @@ import nz.ac.aut.hss.card.client.RemoteObject;
 import javax.crypto.SecretKey;
 import java.rmi.RemoteException;
 import java.security.PublicKey;
+import java.util.Scanner;
 
 /**
  * A simple Java Card host application that demonstrates a JCRMI host
@@ -45,7 +46,7 @@ public class SecureHost {
 			System.out.println("Retrieving public key");
 			byte[] publicKeyBytes = remote.getPublicKeyBytes();
 			final PublicKey publicKey = KeyUtil.toKey(publicKeyBytes);
-			System.out.println(publicKey);
+			// System.out.println(publicKey);
 //			System.out.println("Using asymmetric encryption");
 //			remote.useAsymmetricEncryption();
 //			accessor.setPublicKey(publicKey);
@@ -63,25 +64,112 @@ public class SecureHost {
 
 			System.out.println();
 
-			// PIN
-			final byte[] incorrectPinBytes = {0x01, 0x02, 0x03, 0x04};
-			enterPin(remote, incorrectPinBytes, "incorrect");
-
-			final byte[] pinBytes = {0x04, 0x03, 0x02, 0x01};
-			enterPin(remote, pinBytes, "correct");
-
-			System.out.println();
-
-			// get details
-			System.out.println("Retrieving details");
-			byte[] name = remote.getName();
-			System.out.printf("%20s: %10s\n", "Account name", new String(name));
-			byte[] accountNumber = remote.getAccountNumber();
-			System.out.printf("%20s: %10s\n", "Account number", new String(accountNumber));
-			byte[] expiryDate = remote.getExpiryDate();
-			System.out.printf("%20s: %10s\n", "Expiry date", new String(expiryDate));
-			byte[] securityCode = remote.getSecurityCode();
-			System.out.printf("%20s: %10s\n", "Security code", new String(securityCode));
+            System.out.println("Welcome, Please enter your pin: ");
+            Scanner input = new Scanner(System.in);
+            byte[] values;
+            String s = input.nextLine();
+            String[] str = s.split(" ");
+            values = new byte[str.length];
+            int x = 0;
+            for(String i : str){
+                values[x] = (byte) (Integer.parseInt(i));
+                x++;
+            }
+            
+            boolean correct = enterPin(remote, values, "");
+            while(!correct){
+                System.out.println("Please try again, enter your pin: ");
+                s = input.nextLine();
+                str = s.split(" ");
+                values = new byte[str.length];
+                x = 0;
+                for(String i : str){
+                    values[x] = (byte) (Integer.parseInt(i));
+                    x++;
+                }
+                correct = enterPin(remote, values, "");
+            }
+            System.out.println();
+            System.out.println("Thank you");
+            System.out.println();
+            int[] options = {1, 2, 3, 4, 5};
+            System.out.println("Access Granted");
+                    System.out.println("MENU");
+                    System.out.println("1: \t Get Cardholder Name");
+                    System.out.println("2: \t Get Account Number");
+                    System.out.println("3: \t Get Expiry Date");
+                    System.out.println("4: \t Get Security Code");
+                    System.out.println("5: \t Quit");
+            
+            s = input.nextLine();
+            int choice = Integer.parseInt(s);
+            while(choice!=5){
+                while(choice!=1 && choice!=2 && choice!=3 && choice!=4 && choice!=5){
+                    System.out.println("Sorry that was not an option");
+                    System.out.println("MENU");
+                    System.out.println("1: \t Get Cardholder Name");
+                    System.out.println("2: \t Get Account Number");
+                    System.out.println("3: \t Get Expiry Date");
+                    System.out.println("4: \t Get Security Code");
+                    System.out.println("5: \t Quit");
+                    s = input.nextLine();
+                    choice = Integer.parseInt(s);
+                    System.out.println();
+                }
+                while(choice==1){
+                    byte[] name = remote.getName();
+                    System.out.printf("%20s: %10s\n", "Cardholder: ", new String(name));
+                    System.out.println("MENU");
+                    System.out.println("1: \t Get Cardholder Name");
+                    System.out.println("2: \t Get Account Number");
+                    System.out.println("3: \t Get Expiry Date");
+                    System.out.println("4: \t Get Security Code");
+                    System.out.println("5: \t Quit");
+                    s = input.nextLine();
+                    choice = Integer.parseInt(s);
+                    System.out.println();
+                }
+                while(choice==2){		
+                    byte[] accountNumber = remote.getAccountNumber();
+                    System.out.printf("%20s: %10s\n", "Account number: ", new String(accountNumber));
+                    System.out.println("MENU");
+                    System.out.println("1: \t Get Cardholder Name");
+                    System.out.println("2: \t Get Account Number");
+                    System.out.println("3: \t Get Expiry Date");
+                    System.out.println("4: \t Get Security Code");
+                    System.out.println("5: \t Quit");
+                    s = input.nextLine();
+                    choice = Integer.parseInt(s);
+                    System.out.println();
+                }
+                while(choice==3){
+                    byte[] expiryDate = remote.getExpiryDate();
+                    System.out.printf("%20s: %10s\n", "Expiry date: ", new String(expiryDate));
+                    System.out.println("MENU");
+                    System.out.println("1: \t Get Cardholder Name");
+                    System.out.println("2: \t Get Account Number");
+                    System.out.println("3: \t Get Expiry Date");
+                    System.out.println("4: \t Get Security Code");
+                    System.out.println("5: \t Quit");
+                    s = input.nextLine();
+                    choice = Integer.parseInt(s);
+                    System.out.println();
+                }
+                while(choice==4){
+                    byte[] securityCode = remote.getSecurityCode();
+                    System.out.printf("%20s: %10s\n", "Security code", new String(securityCode));
+                    System.out.println("MENU");
+                    System.out.println("1: \t Get Cardholder Name");
+                    System.out.println("2: \t Get Account Number");
+                    System.out.println("3: \t Get Expiry Date");
+                    System.out.println("4: \t Get Security Code");
+                    System.out.println("5: \t Quit");
+                    s = input.nextLine();
+                    choice = Integer.parseInt(s);
+                    System.out.println();
+                }
+           }
+           System.out.println("Quitting");
 		} catch (RemoteException e) {
 			System.err.println("Remote Exception: " + e);
 			e.printStackTrace();
@@ -105,13 +193,18 @@ public class SecureHost {
 		System.out.println();
 	}
 
-	private static void enterPin(final RemoteObject remoteProxy, final byte[] pinBytes, String label)
+	private static boolean enterPin(final RemoteObject remoteProxy, final byte[] pinBytes, String label)
 			throws RemoteException, UserException {
 		final short pinTriesRemaining;
 		printPin(label, pinBytes);
 		pinTriesRemaining = remoteProxy.checkPIN(pinBytes);
 		System.out.println("PIN is " +
 				(pinTriesRemaining == -1 ? "correct" : "incorrect - " + pinTriesRemaining + " attempts remaining"));
+        if(pinTriesRemaining == -1){
+            return true;
+        }else{
+            return false;
+        }
 	}
 
 	private static void printPin(final String pinDescription, final byte[] pinBytes) {

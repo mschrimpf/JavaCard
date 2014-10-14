@@ -99,7 +99,9 @@ public class SecureAccessor implements CardAccessor {
         byte[] sendData = addHash(buffer);
 		byte lc = sendData[OFFSET_LC];
 		byte[] plaintext = pad(sendData, OFFSET_CDATA, lc);
-		initCipher(Cipher.ENCRYPT_MODE);
+		if (publicKey == null){
+            initCipher(Cipher.ENCRYPT_MODE);
+        }
 		byte[] ciphertext;
 		try {
 			if (publicKey != null) {
@@ -175,7 +177,73 @@ public class SecureAccessor implements CardAccessor {
 	}
 
 	private byte[] decrypt(final byte[] encryptedResponse) throws IOException {
-		if (DISPLAY_APDU) {
+    
+        // if (DISPLAY_APDU) {
+                // System.out.println("CIPHERTEXT RESPONSE APDU:");
+                // System.out.println("yo:  " + Integer.toHexString(encryptedResponse[0] & 0xFF));
+                // for (int i = 0; i < encryptedResponse.length; i++)
+                    // System.out.print(" " + Integer.toHexString
+                            // (encryptedResponse[i] & 0xFF));
+                // System.out.println("length " + encryptedResponse.length);
+            // }
+            // // decrypt the data field in response APDU
+            // // note that JCRMI puts SW1 and SW2 first in the response
+            // // and not as a trailer (unlike a standard response APDU)
+            // if ((encryptedResponse.length - 2) % BLOCK_SIZE != 0) {
+                // throw new IOException("Illegal block size in response");
+            // }
+            // if (publicKey == null) { // only for symmetric encryption
+            // System.out.println("SYMMETRIC");
+                // initCipher(Cipher.DECRYPT_MODE);
+            // }
+            // byte[] deciphertext = null;
+            // try {
+                // deciphertext = cipher.doFinal(encryptedResponse, OFFSET_RDATA, encryptedResponse.length - 2);
+                // System.out.println("length is " + deciphertext.length);
+                
+                            // for (int i = 0; i < deciphertext.length; i++){
+                    // System.out.print(".. " + Integer.toHexString
+                            // (deciphertext[i] & 0xFF));
+                            // }
+                    // System.out.println();
+                            
+                            
+            // } catch (IllegalBlockSizeException e) {
+                // System.err.println("Illegal padding in decryption: " + e);
+            // } catch (BadPaddingException e) {
+                // System.err.println("Bad padding in decryption: " + e);
+            // }
+            // if (deciphertext.length == 0)
+                // throw new IllegalStateException("deciphertext length is 0");
+            // byte numPadding = deciphertext[deciphertext.length - 1];
+            // int unpaddedLength = deciphertext.length - numPadding;
+            // int onelessunpaddedLength = unpaddedLength-1;
+            // byte[] decryptedResponse
+                    // = new byte[OFFSET_RDATA + onelessunpaddedLength];
+            // decryptedResponse[OFFSET_SW1] = encryptedResponse[OFFSET_SW1];
+            // decryptedResponse[OFFSET_SW2] = encryptedResponse[OFFSET_SW2];
+            // System.arraycopy(deciphertext, 0, decryptedResponse,
+                    // OFFSET_RDATA, onelessunpaddedLength);
+                    
+                    // for (int i = 0; i < unpaddedLength; i++){
+                    // System.out.print(":) " + Integer.toHexString
+                            // (deciphertext[i] & 0xFF));
+                            // }
+                            
+                    // System.out.println();
+            // if (DISPLAY_APDU) {
+                // System.out.println("DECIPHERTEXT RESPONSE APDU:");
+                // for (int i = 0; i < decryptedResponse.length; i++)
+                    // System.out.print(" " + Integer.toHexString
+                            // (decryptedResponse[i] & 0xFF));
+                // System.out.println();
+            // }
+            // byte le = decryptedResponse[3];
+            // byte onelessle = (byte)((short)(le-1));
+            // decryptedResponse[3] = onelessle;
+            // return decryptedResponse;
+            
+         if (DISPLAY_APDU) {
 			System.out.println("CIPHERTEXT RESPONSE APDU:");
 			for (int i = 0; i < encryptedResponse.length; i++)
 				System.out.print(" " + Integer.toHexString

@@ -93,8 +93,56 @@ public class Security extends BasicService implements SecurityService {
 			mode = ENCRYPT_ASYMMETRIC;
 			return false;
 		}
-
+        // byte[]  buffer = null;
+        // byte[]  padded = null;
+        // byte[]  buff = null;
 		// get outgoing APDU buffer (CLA,INS,SW1,SW2,Le,data field)
+		// byte[] buffer = apdu.getBuffer();
+        // byte[] originalbuffer = apdu.getBuffer();
+                    // adds hash and modifies le to fit hash
+            // buffer = Authenticator.appendHash(originalbuffer);
+            // byte le = originalbuffer[OFFSET_OUT_LA];
+            // byte leplusone = (byte)((short)(le+1));
+            // buffer[OFFSET_OUT_LA] = leplusone;
+            
+            // encrypt the data field in response APDU
+            // byte unpaddedLength = (byte) (buffer[OFFSET_OUT_LA] & 0xFF);
+            // pad the buffer segment to have blocks of length BLOCK_SIZE
+            // bytes as per PKCS#5 padding scheme where the padding bytes
+            // always each give the number of padded bytes
+            // short numBlocks = (short) ((short) (unpaddedLength + BLOCK_SIZE) / BLOCK_SIZE);
+            // short paddedLength = (short) (numBlocks * BLOCK_SIZE);
+            // padded = getTransientArray(paddedLength);
+            // Util.arrayCopyNonAtomic(buffer, OFFSET_OUT_RDATA, padded, (short) 0, unpaddedLength);
+            // byte numPadding = (byte) (paddedLength - unpaddedLength);
+            // for (short i = unpaddedLength; i < paddedLength; i++){
+                // padded[i] = numPadding;
+            // }
+            // if ((short) (OFFSET_OUT_RDATA - 1 + paddedLength) > buffer.length) { // outgoing buffer can not accommodate the padding
+                // CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
+            // }
+            // if(mode == ENCRYPT_SYMMETRIC) {
+                // encryptCipher.init(key, Cipher.MODE_ENCRYPT, KeySpec.SESSION_IV_BYTES, (short) 0, (short) KeySpec.SESSION_IV_BYTES.length);
+            // } else if(mode == ENCRYPT_ASYMMETRIC) {
+                // encryptCipher.init(privateKey, Cipher.MODE_ENCRYPT);
+            // } else {
+                // ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+            // }
+            // ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+            // buff = getTransientArray((short)(paddedLength+OFFSET_OUT_RDATA));
+            // buff[0] = buffer[0];
+            // buff[1] = buffer[1];
+            // buff[2] = buffer[2];
+            // buff[3] = buffer[3];
+            // buff[OFFSET_OUT_LA] = (byte) paddedLength;
+            
+            // encryptCipher.doFinal(padded, (short) 0, paddedLength, buff, OFFSET_OUT_RDATA);
+            // Util.arrayCopyNonAtomic(padded, (short) 0, buff, OFFSET_OUT_RDATA, (short)(paddedLength));
+            // Util.arrayCopyNonAtomic(buff, (short) 0, originalbuffer, (short) 0, (short)(paddedLength+OFFSET_OUT_RDATA));
+            
+            // return true;
+            
+        // get outgoing APDU buffer (CLA,INS,SW1,SW2,Le,data field)
 		byte[] buffer = apdu.getBuffer();
 
 		// encrypt the data field in response APDU
@@ -198,90 +246,6 @@ public class Security extends BasicService implements SecurityService {
         }
 		return true; // don't allow any other preprocessing
 	}
-    
-    // private boolean checkHash(byte[] data){
-        // // System.out.println("checking... ");
-                // // int j = 0;
-        // // for(byte b : data){
-            // // System.out.println(":( " + j + ": " + b);
-            // // j++;
-         // // }      
-            // //******************CHECK HASH******************
-        // //find length of body of message (short and byte value)
-        // byte bytelength = data[OFFSET_LC];
-        // short length = (short)bytelength;
-        // // System.out.println("length is " + length);
-        // //put body of buffer into its own byte[]
-        // byte[] bodybuffer = new byte[((short)(length))];
-        // System.arraycopy(data, OFFSET_CDATA                                                                                                                                                                                                                                                                                  , bodybuffer,
-				// (short) 0, (short)(length));
-          // // int i = 0;
-        // // for(byte b : data){
-            // // System.out.println(":" + i + ": " + b);
-            // // i++;
-         // // }   
-         // byte hash = getHash(bodybuffer, (short)(length-1));
-         // // System.out.println("Signature x: " + hash  + ", hash: " + bodybuffer[bodybuffer.length-1]);
-         // return hash == bodybuffer[bodybuffer.length-1];
-         
-        // if(!Authenticator.checkHash(bodybuffer)){
-            // CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
-        // }
-        // cardHolderAuthenticated = Authenticator.checkHash(bodybuffer);
-        // setAuthentication(true);
-
-    // }
-
-        // private byte[] removeHash(byte[] data, byte lc){
-        // byte newlc = (byte)((short)(lc-1));
-        // data[ISO7816.OFFSET_LC] = newlc;
-        // byte[] buffer = getTransientArray((short)(data.length-1));
-		// byte numPadding = data[(short) (ISO7816.OFFSET_LC + lc)];
-        // //get lc value and change it
-        // //create new array with 1 less length
-        // //remove hash
-        // //  find padding number
-        // //  find index of hash using padding number
-        // //copy bytes 0-4 (using new lc value)
-        // //copy bytes 5-one below hash index
-        // //copy byte one after hash index-length
-        
-        		// // get the incoming APDU buffer
-		// byte[] originalbuffer = apdu.getBuffer();
-		// byte originallc = originalbuffer[ISO7816.OFFSET_LC]; // padded length
-        // byte lc = (byte) (short) (originallc-1);
-		// byte le = originalbuffer[(short) (ISO7816.OFFSET_LC + lc + 1)];
-        // originalbuffer[ISO7816.OFFSET_LC] = lc;
-        // byte removeIndex = (byte)((short)(originalbuffer.length - (short) numPadding - 1));
-        // byte end = (byte)(short)(removeIndex-OFFSET_OUT_RDATA);
-        // byte[] buffer = getTransientArray((short)(originalbuffer.length-1));
-		// Util.arrayCopyNonAtomic(originalbuffer, (short) 0,
-				// buffer, (short) 0, OFFSET_OUT_RDATA);
-        // Util.arrayCopyNonAtomic(originalbuffer, OFFSET_OUT_RDATA,
-				// buffer, (short) 0, end);        
-		// // decrypt the data field in the command APDU
-		// if (lc % BLOCK_SIZE != 0)
-			// CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
-		// byte[] deciphertext = getTransientArray(lc);
-		// if(mode == ENCRYPT_SYMMETRIC) {
-			// decryptCipher.init(key, Cipher.MODE_DECRYPT, KeySpec.SESSION_IV_BYTES, (short) 0,
-					// (short) KeySpec.SESSION_IV_BYTES.length);
-		// } else if(mode == ENCRYPT_ASYMMETRIC) {
-			// decryptCipher.init(privateKey, Cipher.MODE_DECRYPT);
-		// } else {
-			// ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-		// }
-		// decryptCipher.doFinal(buffer, ISO7816.OFFSET_CDATA, lc, deciphertext,
-				// (short) 0);
-		// // byte numPadding = deciphertext[(short) (lc - 1)];
-		// byte unpaddedLength = (byte) (lc - numPadding);
-		// Util.arrayCopyNonAtomic(deciphertext, (short) 0,
-				// buffer, ISO7816.OFFSET_CDATA, unpaddedLength);
-		// buffer[ISO7816.OFFSET_LC] = unpaddedLength;
-		// buffer[(short) (ISO7816.OFFSET_LC + unpaddedLength + 1)] = le;
-		// // reset the CLA security bits
-		// buffer[ISO7816.OFFSET_CLA] &= ~CLA_SECURITY_BITS_MASK;
-    // }
 
 	// returns whether specified principal (APP_PROVIDER, CARD_ISSUER,
 	// or CARDHOLDER) is currently authenticated
